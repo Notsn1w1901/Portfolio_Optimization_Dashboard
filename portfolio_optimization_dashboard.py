@@ -120,7 +120,7 @@ else:
         portfolio_risk = standard_deviation(weights, cov_matrix)
         return portfolio_return, portfolio_risk
 
-    # Generate the Efficient Frontier with error handling
+    # Generate the Efficient Frontier
     target_risks = np.linspace(0, 1, 100)  # 100 risk levels from 1% to 50%
     efficient_returns = []
     efficient_risks = []
@@ -136,21 +136,16 @@ else:
         bounds = [(0, 1)] * len(tickers)  # Weights between 0 and 1
         initial_weights = np.ones(len(tickers)) / len(tickers)  # Starting guess: equally weighted
 
-        # Optimization with error handling for each target risk
-        try:
-            result = minimize(objective, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints)
-            
-            if result.success:
-                efficient_return, efficient_risk = portfolio_metrics(result.x, log_returns, cov_matrix)
-                efficient_returns.append(efficient_return)
-                efficient_risks.append(efficient_risk)
-            else:
-                st.warning(f"Optimization failed for target risk level {target_risk:.2f}.")
-                efficient_returns.append(np.nan)  # Append NaN if optimization fails
-                efficient_risks.append(np.nan)
-
-        except Exception as e:
-            st.warning(f"Error in optimization for target risk level {target_risk:.2f}: {e}")
+        # Perform optimization, but suppress failure warnings
+        result = minimize(objective, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints)
+        
+        # Only append to the efficient frontier if optimization was successful
+        if result.success:
+            efficient_return, efficient_risk = portfolio_metrics(result.x, log_returns, cov_matrix)
+            efficient_returns.append(efficient_return)
+            efficient_risks.append(efficient_risk)
+        else:
+            # Append NaN values if optimization fails (just continue to next iteration)
             efficient_returns.append(np.nan)
             efficient_risks.append(np.nan)
 
