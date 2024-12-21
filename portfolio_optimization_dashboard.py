@@ -94,27 +94,27 @@ else:
     cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
 
     # User input for weight constraints
-    st.subheader("Set weight constraints for each ticker")
+    st.subheader("Adjust the weight for the first ticker")
 
-    min_weights = []
-    max_weights = []
+    # Allow user to set the weight for the first ticker
+    first_ticker_weight = st.slider(f"Weight for {tickers[0]} (%)", 0.0, 100.0, 50.0) / 100  # Slider for first ticker weight
 
-    # Input for each ticker's weight constraints (min and max)
-    for ticker in tickers:
-        if ticker:  # If the ticker is not empty
-            min_weight = st.number_input(f"Min weight for {ticker} (%)", min_value=0.0, max_value=100.0, value=10.0, step=1.0) / 100
-            max_weight = st.number_input(f"Max weight for {ticker} (%)", min_value=0.0, max_value=100.0, value=30.0, step=1.0) / 100
-            min_weights.append(min_weight)
-            max_weights.append(max_weight)
+    # Ensure that the sum of weights equals 1
+    remaining_weight = 1 - first_ticker_weight
+
+    # Define bounds for the other tickers' weights as fixed (no weight adjustment)
+    other_tickers_weight = remaining_weight / (len(tickers) - 1) if len(tickers) > 1 else 0
+
+    # Set the initial weights
+    initial_weights = [first_ticker_weight] + [other_tickers_weight] * (len(tickers) - 1)
 
     # Fixed portfolio constraints: sum of weights must be 1
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
 
-    # Set bounds for the portfolio weights based on user input
-    bounds = [(min_w, max_w) for min_w, max_w in zip(min_weights, max_weights)]
+    # Set bounds for the portfolio weights (first ticker can adjust, others are fixed)
+    bounds = [(first_ticker_weight, first_ticker_weight)] + [(0, 1)] * (len(tickers) - 1)
 
     # Optimize portfolio using the negative Sharpe ratio
-    initial_weights = np.ones(len(tickers)) / len(tickers)
     optimized_results = minimize(neg_sharpe_ratio, initial_weights, args=(log_returns, cov_matrix, risk_free_rate_input),
                                  method='SLSQP', constraints=constraints, bounds=bounds)
 
