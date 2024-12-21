@@ -40,13 +40,17 @@ st.subheader("Enter asset tickers")
 
 # Initialize tickers list in session state
 if 'tickers' not in st.session_state:
-    st.session_state['tickers'] = ["For Crypto Ticker-USD/For Stocks Ticker.JK"]  # Default ticker
+    st.session_state['tickers'] = ["BTC-USD"]  # Default ticker
 
 # Display existing tickers and allow user to edit
 for i, ticker in enumerate(st.session_state['tickers']):
     st.session_state['tickers'][i] = st.text_input(f"Ticker {i+1}", ticker, key=f"ticker_{i}")
 
-# If the last input is filled, add an empty one
+# Button to add a new ticker
+if st.button('Add New Ticker'):
+    st.session_state['tickers'].append("")  # Add a new empty ticker to the list
+
+# If the last input is filled, add an empty one (for automatic ticker addition when pressing Enter)
 if st.session_state['tickers'][-1] != "" and len(st.session_state['tickers']) < 10:
     st.session_state['tickers'].append("")  # Add a new empty ticker input box
 
