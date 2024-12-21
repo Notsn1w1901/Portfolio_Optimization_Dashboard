@@ -46,8 +46,8 @@ if 'tickers' not in st.session_state:
 for i in range(len(st.session_state['tickers'])):
     ticker = st.text_input(f"Ticker {i+1}", st.session_state['tickers'][i], key=f"ticker_{i}")
     
-    # Add a new empty ticker input box if the user presses enter or fills out the current box
-    if i == len(st.session_state['tickers']) - 1:
+    # Only add a new empty ticker input box if the current one is filled
+    if i == len(st.session_state['tickers']) - 1 and ticker != "":
         st.session_state['tickers'].append("")  # Add a new empty ticker box after the last one
 
 # Clean the tickers list (remove empty strings)
