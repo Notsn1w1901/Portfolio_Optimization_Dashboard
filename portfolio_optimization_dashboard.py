@@ -73,6 +73,12 @@ st.subheader("Enter the number of years of data to use")
 
 years_of_data = st.number_input("Years of Data", min_value=1, max_value=20, value=5, step=1)  # User-defined years
 
+# User input for max and min asset weights
+st.subheader("Set Portfolio Constraints")
+
+max_weight = st.number_input("Maximum weight per asset (%)", min_value=1, max_value=100, value=50) / 100
+min_weight = st.number_input("Minimum weight per asset (%)", min_value=0, max_value=100, value=0) / 100
+
 # Define the time period for the data
 end_date = datetime.today()
 start_date = end_date - timedelta(days=years_of_data * 365)  # Use user input for years
@@ -111,8 +117,13 @@ else:
     # Fixed portfolio constraints
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
 
+    # Adding the constraints for the maximum and minimum weight per asset
+    for i in range(len(tickers)):
+        constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: weights[i] - min_weight})
+        constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: max_weight - weights[i]})
+
     # Set bounds for the portfolio weights (between 0 and 1 for each asset)
-    bounds = [(0.1, 1)] * len(tickers)
+    bounds = [(min_weight, max_weight)] * len(tickers)
 
     # Optimize portfolio using the negative Sharpe ratio
     initial_weights = np.ones(len(tickers)) / len(tickers)
