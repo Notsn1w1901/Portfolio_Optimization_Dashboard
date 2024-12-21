@@ -46,7 +46,10 @@ if 'tickers' not in st.session_state:
 for i in range(len(st.session_state['tickers'])):
     ticker = st.text_input(f"Ticker {i+1}", st.session_state['tickers'][i], key=f"ticker_{i}")
     
-    # Only add a new empty ticker input box if the current one is filled
+    # Update the ticker in session state if filled
+    st.session_state['tickers'][i] = ticker
+    
+    # Only add a new empty ticker input box if the current one is filled and it's not the last one
     if i == len(st.session_state['tickers']) - 1 and ticker != "":
         st.session_state['tickers'].append("")  # Add a new empty ticker box after the last one
 
@@ -74,15 +77,19 @@ adj_close_df = pd.DataFrame()
 # Only fetch data for non-empty tickers
 for ticker in tickers:
     if ticker:  # Proceed only if the ticker is non-empty
-        data = yf.download(ticker, start=start_date, end=end_date)
-        
-        # Check if 'Adj Close' exists, otherwise use 'Close'
-        if 'Adj Close' in data.columns:
-            adj_close_df[ticker] = data['Adj Close']
-        elif 'Close' in data.columns:
-            adj_close_df[ticker] = data['Close']
-        else:
-            st.error(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
+        try:
+            data = yf.download(ticker, start=start_date, end=end_date)
+            
+            # Check if 'Adj Close' exists, otherwise use 'Close'
+            if 'Adj Close' in data.columns:
+                adj_close_df[ticker] = data['Adj Close']
+            elif 'Close' in data.columns:
+                adj_close_df[ticker] = data['Close']
+            else:
+                st.warning(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
+                continue
+        except Exception as e:
+            st.error(f"Error fetching data for {ticker}: {e}")
             continue
 
 # Check if any data was fetched and handle the case if not
