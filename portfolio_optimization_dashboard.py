@@ -39,6 +39,9 @@ st.title('Portfolio Optimization Dashboard')
 tickers_input = st.text_input("Enter asset tickers (comma separated)", "BTC-USD,BBCA.JK")
 investment_amount_idr = st.number_input("Enter your investment amount (in IDR)", value=10000000, step=100000)
 
+# User input for risk-free rate
+risk_free_rate_input = st.number_input("Enter the risk-free rate (in %)", value=6.0, step=0.1) / 100  # Convert percentage to decimal
+
 # Convert tickers input to a list
 tickers = [ticker.strip() for ticker in tickers_input.split(',')]
 
@@ -70,9 +73,6 @@ else:
     # Covariance matrix for the log returns
     cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
 
-    # Risk-free rate assumption
-    risk_free_rate = 0.06
-
     # Fixed portfolio constraints
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
 
@@ -81,7 +81,7 @@ else:
 
     # Optimize portfolio using the negative Sharpe ratio
     initial_weights = np.ones(len(tickers)) / len(tickers)
-    optimized_results = minimize(neg_sharpe_ratio, initial_weights, args=(log_returns, cov_matrix, risk_free_rate),
+    optimized_results = minimize(neg_sharpe_ratio, initial_weights, args=(log_returns, cov_matrix, risk_free_rate_input),
                                  method='SLSQP', constraints=constraints, bounds=bounds)
 
     # Extract the optimal weights
