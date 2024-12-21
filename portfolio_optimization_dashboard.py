@@ -32,6 +32,29 @@ def sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
 def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
     return -sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate)
 
+def markowitz_optimization(log_returns, cov_matrix, target_volatility, risk_free_rate):
+    # Objective: Maximize expected return for a given level of volatility (risk)
+    def objective(weights):
+        port_return = expected_return(weights, log_returns)
+        port_volatility = standard_deviation(weights, cov_matrix)
+        return -port_return if port_volatility <= target_volatility else np.inf  # Penalize exceeding the target volatility
+
+    # Constraints: sum of weights = 1
+    constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
+    # Bounds: weights should be between 0 and 1 for each asset
+    bounds = [(0, 1)] * len(log_returns.columns)
+    
+    # Initial guess for the weights
+    initial_weights = np.ones(len(log_returns.columns)) / len(log_returns.columns)
+    
+    # Minimize the objective function
+    result = minimize(objective, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints)
+    
+    if result.success:
+        return result.x  # Optimal weights
+    else:
+        raise ValueError("Optimization did not converge")
+
 # Streamlit app structure
 st.title('Portfolio Optimization Dashboard')
 
@@ -108,79 +131,76 @@ else:
     # Covariance matrix for the log returns
     cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
 
-    # Fixed portfolio constraints
-    constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
-
-    # Set bounds for the portfolio weights (between 0 and 1 for each asset)
-    bounds = [(0.1, 1)] * len(tickers)
-
-    # Optimize portfolio using the negative Sharpe ratio
-    initial_weights = np.ones(len(tickers)) / len(tickers)
-    optimized_results = minimize(neg_sharpe_ratio, initial_weights, args=(log_returns, cov_matrix, risk_free_rate_input),
-                                 method='SLSQP', constraints=constraints, bounds=bounds)
-
-    # Extract the optimal weights
-    optimal_weights = optimized_results.x
-
     # Get live exchange rate for IDR to USD
     idr_to_usd = get_exchange_rate()
 
     # Convert the investment amount in IDR to USD
     investment_amount_usd = investment_amount_idr / idr_to_usd
 
-    # Convert capital allocation for each asset to USD
-    capital_allocation_usd = optimal_weights * investment_amount_usd
+    # User input for the target risk (volatility)
+    target_risk = st.slider("Target Portfolio Volatility (%)", min_value=1, max_value=50, value=10) / 100  # Convert percentage to decimal
 
-    # Convert the capital allocation back to IDR for displaying
-    capital_allocation_idr = capital_allocation_usd * idr_to_usd
+    # Perform Markowitz optimization
+    try:
+        optimal_weights = markowitz_optimization(log_returns, cov_matrix, target_risk, risk_free_rate_input)
+    except ValueError as e:
+        st.error(f"Error in optimization: {e}")
+        optimal_weights = None
 
-    # Display optimal weights and capital allocation
-    st.subheader('Optimal Portfolio Weights and Capital Allocation')
-    for ticker, weight, capital in zip(tickers, optimal_weights, capital_allocation_idr):
-        st.write(f"{ticker}: Weight = {weight:.4f}, Allocated Capital = Rp {capital:,.2f}")
+    if optimal_weights is not None:
+        # Convert the capital allocation for each asset to USD
+        capital_allocation_usd = optimal_weights * investment_amount_usd
 
-    # Calculate Portfolio Expected Return and Risk
-    portfolio_expected_return = expected_return(optimal_weights, log_returns)
-    portfolio_risk = standard_deviation(optimal_weights, cov_matrix)
+        # Convert the capital allocation back to IDR for displaying
+        capital_allocation_idr = capital_allocation_usd * idr_to_usd
 
-    # Display Portfolio Expected Return and Risk
-    st.subheader('Portfolio Metrics')
-    st.write(f"Portfolio Expected Return (Annualized): {portfolio_expected_return:.2f}%")
-    st.write(f"Portfolio Risk (Standard Deviation): {portfolio_risk:.2f}")
+        # Display optimal weights and capital allocation
+        st.subheader('Optimal Portfolio Weights and Capital Allocation')
+        for ticker, weight, capital in zip(tickers, optimal_weights, capital_allocation_idr):
+            st.write(f"{ticker}: Weight = {weight:.4f}, Allocated Capital = Rp {capital:,.2f}")
 
-    # Calculate portfolio returns and cumulative returns
-    portfolio_returns = np.dot(log_returns.values, optimal_weights)
-    cumulative_returns = (1 + portfolio_returns).cumprod()
+        # Calculate Portfolio Expected Return and Risk
+        portfolio_expected_return = expected_return(optimal_weights, log_returns)
+        portfolio_risk = standard_deviation(optimal_weights, cov_matrix)
 
-    # Plot the cumulative returns of the portfolio
-    st.subheader('Portfolio Cumulative Returns')
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(cumulative_returns, label='Optimized Portfolio')
-    ax.set_title('Portfolio Performance (Cumulative Returns)')
-    ax.set_xlabel('Time (Days)')
-    ax.set_ylabel('Cumulative Returns')
-    ax.legend()
-    st.pyplot(fig)
+        # Display Portfolio Expected Return and Risk
+        st.subheader('Portfolio Metrics')
+        st.write(f"Portfolio Expected Return (Annualized): {portfolio_expected_return:.2f}%")
+        st.write(f"Portfolio Risk (Standard Deviation): {portfolio_risk:.2f}")
 
-    # Plot the portfolio weights as a pie chart
-    st.subheader('Portfolio Weights Distribution')
-    fig, ax = plt.subplots(figsize=(8, 8))
-    ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
-    ax.set_title('Optimal Portfolio Weights')
-    st.pyplot(fig)
+        # Calculate portfolio returns and cumulative returns
+        portfolio_returns = np.dot(log_returns.values, optimal_weights)
+        cumulative_returns = (1 + portfolio_returns).cumprod()
 
-    # Plot the capital allocation in IDR as a bar chart
-    st.subheader('Capital Allocation in IDR')
-    fig, ax = plt.subplots(figsize=(10, 6))
-    bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
-    ax.set_xlabel('Assets')
-    ax.set_ylabel('Allocated Capital (Rp)')
-    ax.set_title('Capital Allocation for Investment (in IDR)')
+        # Plot the cumulative returns of the portfolio
+        st.subheader('Portfolio Cumulative Returns')
+        fig, ax = plt.subplots(figsize=(10, 6))
+        ax.plot(cumulative_returns, label='Optimized Portfolio')
+        ax.set_title('Portfolio Performance (Cumulative Returns)')
+        ax.set_xlabel('Time (Days)')
+        ax.set_ylabel('Cumulative Returns')
+        ax.legend()
+        st.pyplot(fig)
 
-    # Annotate the bars with capital amounts
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, height + 50000, f'Rp {height:,.2f}', 
-                 ha='center', va='bottom', fontsize=10, color='black')
+        # Plot the portfolio weights as a pie chart
+        st.subheader('Portfolio Weights Distribution')
+        fig, ax = plt.subplots(figsize=(8, 8))
+        ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
+        ax.set_title('Optimal Portfolio Weights')
+        st.pyplot(fig)
 
-    st.pyplot(fig)
+        # Plot the capital allocation in IDR as a bar chart
+        st.subheader('Capital Allocation in IDR')
+        fig, ax = plt.subplots(figsize=(10, 6))
+        bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
+        ax.set_xlabel('Assets')
+        ax.set_ylabel('Allocated Capital (Rp)')
+        ax.set_title('Capital Allocation for Investment (in IDR)')
+
+        # Annotate the bars with capital amounts
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2, height + 50000, f'Rp {height:,.2f}', 
+                     ha='center', va='bottom', fontsize=10, color='black')
+
+        st.pyplot(fig)
