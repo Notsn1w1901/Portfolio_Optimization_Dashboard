@@ -7,6 +7,31 @@ from scipy.optimize import minimize
 import requests  # For getting the current exchange rate
 import streamlit as st
 
+# Function to get live exchange rate from IDR to USD
+def get_exchange_rate():
+    api_key = 'ad98bbfc46d9a98d99e9e201'  # Replace with your API key
+    url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/IDR"
+    response = requests.get(url)
+    data = response.json()
+    if response.status_code == 200:
+        return data['conversion_rates']['USD']
+    else:
+        raise Exception("Error fetching exchange rate")
+
+# Functions for portfolio statistics
+def standard_deviation(weights, cov_matrix):
+    variance = weights.T @ cov_matrix @ weights
+    return np.sqrt(variance)
+
+def expected_return(weights, log_returns):
+    return np.sum(log_returns.mean() * weights) * 252  # Annualized expected return
+
+def sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
+    return (expected_return(weights, log_returns) - risk_free_rate) / standard_deviation(weights, cov_matrix)
+
+def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
+    return -sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate)
+
 # Streamlit app structure
 st.title('Portfolio Optimization Dashboard')
 
