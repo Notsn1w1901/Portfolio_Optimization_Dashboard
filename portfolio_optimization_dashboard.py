@@ -44,6 +44,9 @@ and display the expected return, risk (standard deviation), and capital allocati
 
 The portfolio is optimized with the objective of maximizing the Sharpe ratio, which represents the best risk-adjusted return. 
 You will also be able to visualize the portfolio's performance, weight distribution, and capital allocation.
+
+Sincerely,
+Winston Honadi
 """)
 
 # User input for tickers
