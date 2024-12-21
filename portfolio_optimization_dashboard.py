@@ -35,15 +35,27 @@ def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
 # Streamlit app structure
 st.title('Portfolio Optimization Dashboard')
 
-# User input for tickers and investment amount
-tickers_input = st.text_input("Enter asset tickers (comma separated)", "BTC-USD,BBCA.JK")
+# User input for investment amount
 investment_amount_idr = st.number_input("Enter your investment amount (in IDR)", value=10000000, step=100000)
 
 # User input for risk-free rate
 risk_free_rate_input = st.number_input("Enter the risk-free rate (in %)", value=6.0, step=0.1) / 100  # Convert percentage to decimal
 
-# Convert tickers input to a list
-tickers = [ticker.strip() for ticker in tickers_input.split(',')]
+# Manage tickers input dynamically
+tickers = []
+if 'tickers' not in st.session_state:
+    st.session_state['tickers'] = ["BTC-USD"]  # Default ticker
+
+# Input for tickers
+for i, ticker in enumerate(st.session_state['tickers']):
+    st.session_state['tickers'][i] = st.text_input(f"Ticker {i+1}", ticker)
+
+# Add a new ticker input box when the user clicks the 'Add Ticker' button
+if st.button('Add New Ticker'):
+    st.session_state['tickers'].append("")  # Add a new empty ticker to the list
+
+# Convert tickers input to a list and clean them
+tickers = [ticker.strip() for ticker in st.session_state['tickers'] if ticker.strip() != ""]
 
 # Define the time period for the data
 end_date = datetime.today()
