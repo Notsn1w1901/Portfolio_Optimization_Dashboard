@@ -39,7 +39,7 @@ st.title('Portfolio Optimization Dashboard')
 st.subheader("Enter asset tickers (separated by commas)")
 
 # Input for multiple tickers in one text box
-tickers_input = st.text_input("Tickers (e.g., BTC-USD, BBCA.JK, TSLA)", "BBCA.JK, BTC-USD")
+tickers_input = st.text_input("Tickers (e.g., AAPL, MSFT, TSLA)", "BTC-USD")
 tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
 
 # User input for risk-free rate
@@ -93,11 +93,25 @@ else:
     # Covariance matrix for the log returns
     cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
 
-    # Fixed portfolio constraints
+    # User input for weight constraints
+    st.subheader("Set weight constraints for each ticker")
+
+    min_weights = []
+    max_weights = []
+
+    # Input for each ticker's weight constraints (min and max)
+    for ticker in tickers:
+        if ticker:  # If the ticker is not empty
+            min_weight = st.number_input(f"Min weight for {ticker} (%)", min_value=0.0, max_value=100.0, value=10.0, step=1.0) / 100
+            max_weight = st.number_input(f"Max weight for {ticker} (%)", min_value=0.0, max_value=100.0, value=30.0, step=1.0) / 100
+            min_weights.append(min_weight)
+            max_weights.append(max_weight)
+
+    # Fixed portfolio constraints: sum of weights must be 1
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
 
-    # Set bounds for the portfolio weights (between 0 and 1 for each asset)
-    bounds = [(0.1, 1)] * len(tickers)
+    # Set bounds for the portfolio weights based on user input
+    bounds = [(min_w, max_w) for min_w, max_w in zip(min_weights, max_weights)]
 
     # Optimize portfolio using the negative Sharpe ratio
     initial_weights = np.ones(len(tickers)) / len(tickers)
