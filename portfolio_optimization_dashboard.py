@@ -120,7 +120,7 @@ else:
         portfolio_risk = standard_deviation(weights, cov_matrix)
         return portfolio_return, portfolio_risk
 
-    # Generate the Efficient Frontier
+    # Generate the Efficient Frontier with error handling
     target_risks = np.linspace(0.01, 0.50, 100)  # 100 risk levels from 1% to 50%
     efficient_returns = []
     efficient_risks = []
@@ -129,18 +129,30 @@ else:
         # Minimize the negative expected return for each target risk (Markowitz optimization)
         def objective(weights):
             port_return, port_risk = portfolio_metrics(weights, log_returns, cov_matrix)
+            # If the portfolio risk is greater than the target risk, return a high penalty (inf)
             return -port_return if port_risk <= target_risk else np.inf
 
         constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
-        bounds = [(0, 1)] * len(tickers)
-        initial_weights = np.ones(len(tickers)) / len(tickers)
+        bounds = [(0, 1)] * len(tickers)  # Weights between 0 and 1
+        initial_weights = np.ones(len(tickers)) / len(tickers)  # Starting guess: equally weighted
 
-        result = minimize(objective, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints)
-        
-        if result.success:
-            efficient_return, efficient_risk = portfolio_metrics(result.x, log_returns, cov_matrix)
-            efficient_returns.append(efficient_return)
-            efficient_risks.append(efficient_risk)
+        # Optimization with error handling for each target risk
+        try:
+            result = minimize(objective, initial_weights, method='SLSQP', bounds=bounds, constraints=constraints)
+            
+            if result.success:
+                efficient_return, efficient_risk = portfolio_metrics(result.x, log_returns, cov_matrix)
+                efficient_returns.append(efficient_return)
+                efficient_risks.append(efficient_risk)
+            else:
+                st.warning(f"Optimization failed for target risk level {target_risk:.2f}.")
+                efficient_returns.append(np.nan)  # Append NaN if optimization fails
+                efficient_risks.append(np.nan)
+
+        except Exception as e:
+            st.warning(f"Error in optimization for target risk level {target_risk:.2f}: {e}")
+            efficient_returns.append(np.nan)
+            efficient_risks.append(np.nan)
 
     # Fixed portfolio constraints
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
@@ -180,7 +192,7 @@ else:
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
     cumulative_returns = (1 + portfolio_returns).cumprod()
 
-    # Plot the cumulative returns of the portfolio
+    # Plot the Portfolio Cumulative Returns
     st.subheader('Portfolio Cumulative Returns')
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(cumulative_returns, label='Optimized Portfolio')
@@ -190,7 +202,7 @@ else:
     ax.legend()
     st.pyplot(fig)
 
-      # Plot the Markowitz Efficient Frontier graph below the cumulative returns graph
+    # Plot the Markowitz Efficient Frontier graph below the cumulative returns graph
     st.subheader('Markowitz Efficient Frontier')
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(efficient_risks, efficient_returns, label="Efficient Frontier", color='green')
