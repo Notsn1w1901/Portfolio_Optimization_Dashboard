@@ -124,6 +124,15 @@ else:
     for ticker, weight, capital in zip(tickers, optimal_weights, capital_allocation_idr):
         st.write(f"{ticker}: Weight = {weight:.4f}, Allocated Capital = Rp {capital:,.2f}")
 
+    # Calculate Portfolio Expected Return and Risk
+    portfolio_expected_return = expected_return(optimal_weights, log_returns)
+    portfolio_risk = standard_deviation(optimal_weights, cov_matrix)
+
+    # Display Portfolio Expected Return and Risk
+    st.subheader('Portfolio Metrics')
+    st.write(f"Portfolio Expected Return (Annualized): {portfolio_expected_return:.2f}%")
+    st.write(f"Portfolio Risk (Standard Deviation): {portfolio_risk:.2f}")
+
     # Calculate portfolio returns and cumulative returns
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
     cumulative_returns = (1 + portfolio_returns).cumprod()
