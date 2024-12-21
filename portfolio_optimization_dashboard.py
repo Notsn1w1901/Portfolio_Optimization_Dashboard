@@ -39,7 +39,7 @@ st.title('Portfolio Optimization Dashboard')
 st.subheader("Enter asset tickers (separated by commas)")
 
 # Input for multiple tickers in one text box
-tickers_input = st.text_input("Tickers (e.g., AAPL, MSFT, TSLA)", "BTC-USD")
+tickers_input = st.text_input("Tickers (e.g., BTC-USD, BBCA.JK, TSLA)", "BBCA.JK")
 tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
 
 # User input for risk-free rate
@@ -53,9 +53,14 @@ st.subheader("Enter your investment amount (in IDR)")
 
 investment_amount_idr = st.number_input("Investment Amount (IDR)", value=10000000, step=100000)
 
+# User input for the number of years of data to be used
+st.subheader("Enter the number of years of data to use")
+
+years_of_data = st.number_input("Years of Data", min_value=1, max_value=20, value=5, step=1)  # User-defined years
+
 # Define the time period for the data
 end_date = datetime.today()
-start_date = end_date - timedelta(days=5*365)
+start_date = end_date - timedelta(days=years_of_data * 365)  # Use user input for years
 
 # Download adjusted close price data for each asset
 adj_close_df = pd.DataFrame()
