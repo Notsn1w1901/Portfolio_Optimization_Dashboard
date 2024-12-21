@@ -39,7 +39,7 @@ st.title('Portfolio Optimization Dashboard')
 st.subheader("Enter asset tickers (separated by commas)")
 
 # Input for multiple tickers in one text box
-tickers_input = st.text_input("Tickers (e.g., AAPL, MSFT, TSLA)", "BTC-USD")
+tickers_input = st.text_input("Tickers (e.g., BBCA.JK, BTC-USD, TSLA)", "BBCA.JK, BTC-USD")
 tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
 
 # User input for risk-free rate
@@ -93,16 +93,14 @@ else:
     # Covariance matrix for the log returns
     cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
 
-    # Set initial equal weights for each ticker
-    initial_weights = np.ones(len(tickers)) / len(tickers)  # Equal weights for each ticker
-
-    # Fixed portfolio constraints: sum of weights must be 1
+    # Fixed portfolio constraints
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
 
     # Set bounds for the portfolio weights (between 0 and 1 for each asset)
-    bounds = [(0, 1)] * len(tickers)
+    bounds = [(0.1, 1)] * len(tickers)
 
     # Optimize portfolio using the negative Sharpe ratio
+    initial_weights = np.ones(len(tickers)) / len(tickers)
     optimized_results = minimize(neg_sharpe_ratio, initial_weights, args=(log_returns, cov_matrix, risk_free_rate_input),
                                  method='SLSQP', constraints=constraints, bounds=bounds)
 
