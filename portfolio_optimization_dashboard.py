@@ -46,11 +46,7 @@ if 'tickers' not in st.session_state:
 for i, ticker in enumerate(st.session_state['tickers']):
     st.session_state['tickers'][i] = st.text_input(f"Ticker {i+1}", ticker, key=f"ticker_{i}")
 
-# Button to add a new ticker
-if st.button('Add New Ticker'):
-    st.session_state['tickers'].append("")  # Add a new empty ticker to the list
-
-# If the last input is filled, add an empty one (for automatic ticker addition when pressing Enter)
+# Automatically add an empty ticker box if the last ticker input is filled
 if st.session_state['tickers'][-1] != "" and len(st.session_state['tickers']) < 10:
     st.session_state['tickers'].append("")  # Add a new empty ticker input box
 
