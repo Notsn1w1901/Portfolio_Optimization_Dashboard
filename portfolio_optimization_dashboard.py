@@ -35,27 +35,34 @@ def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
 # Streamlit app structure
 st.title('Portfolio Optimization Dashboard')
 
-# User input for investment amount
-investment_amount_idr = st.number_input("Enter your investment amount (in IDR)", value=10000000, step=100000)
+# User input for tickers first
+st.subheader("Enter asset tickers (comma separated)")
 
-# User input for risk-free rate
-risk_free_rate_input = st.number_input("Enter the risk-free rate (in %)", value=6.0, step=0.1) / 100  # Convert percentage to decimal
-
-# Manage tickers input dynamically
-tickers = []
+# Initialize tickers list in session state
 if 'tickers' not in st.session_state:
     st.session_state['tickers'] = ["BTC-USD"]  # Default ticker
 
-# Input for tickers
+# Display existing tickers and allow user to edit
 for i, ticker in enumerate(st.session_state['tickers']):
     st.session_state['tickers'][i] = st.text_input(f"Ticker {i+1}", ticker)
 
-# Add a new ticker input box when the user clicks the 'Add Ticker' button
+# Button to add a new ticker
 if st.button('Add New Ticker'):
     st.session_state['tickers'].append("")  # Add a new empty ticker to the list
 
-# Convert tickers input to a list and clean them
+# Clean the tickers list (remove empty strings)
 tickers = [ticker.strip() for ticker in st.session_state['tickers'] if ticker.strip() != ""]
+
+# User input for risk-free rate
+st.subheader("Enter the risk-free rate (in %)")
+
+# Risk-free rate input (convert percentage to decimal)
+risk_free_rate_input = st.number_input("Risk-Free Rate (%)", value=6.0, step=0.1) / 100  # Convert percentage to decimal
+
+# User input for investment amount
+st.subheader("Enter your investment amount (in IDR)")
+
+investment_amount_idr = st.number_input("Investment Amount (IDR)", value=10000000, step=100000)
 
 # Define the time period for the data
 end_date = datetime.today()
