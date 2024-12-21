@@ -205,9 +205,40 @@ else:
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(efficient_risks, efficient_returns, label="Efficient Frontier", color='green')
     ax.scatter(efficient_risks, efficient_returns, color='blue', marker='o', label='Individual Portfolios')
+    
+    # Calculate and plot the Capital Allocation Line (CAL)
+    def cal_line(slope, risk_free_rate, x_vals):
+        return risk_free_rate + slope * x_vals
+
+    # Tangency portfolio (max Sharpe ratio)
+    tangency_weights = optimized_results.x
+    tangency_return, tangency_risk = portfolio_metrics(tangency_weights, log_returns, cov_matrix)
+    
+    # Slope of the CAL (Sharpe ratio)
+    cal_slope = (tangency_return - risk_free_rate_input) / tangency_risk
+    cal_risks = np.linspace(0, max(efficient_risks), 100)
+    cal_returns = cal_line(cal_slope, risk_free_rate_input, cal_risks)
+    
+    # Plot the CAL
+    ax.plot(cal_risks, cal_returns, label='Capital Allocation Line (CAL)', color='red', linestyle='--')
+    
+    # Highlight Minimum Variance Portfolio (MVP)
+    min_variance_risk = min(efficient_risks)
+    min_variance_return = efficient_returns[efficient_risks.index(min_variance_risk)]
+    ax.scatter(min_variance_risk, min_variance_return, color='orange', marker='*', label='Minimum Variance Portfolio (MVP)')
+    
+    # Highlight Maximum Return Portfolio
+    max_return_idx = np.argmax(efficient_returns)
+    max_return_risk = efficient_risks[max_return_idx]
+    max_return_value = efficient_returns[max_return_idx]
+    ax.scatter(max_return_risk, max_return_value, color='purple', marker='^', label='Maximum Return Portfolio')
+
+    # Plot the Tangency Portfolio
+    ax.scatter(tangency_risk, tangency_return, color='black', marker='x', label='Tangency Portfolio')
+
     ax.set_xlabel('Risk (Standard Deviation)')
     ax.set_ylabel('Expected Return')
-    ax.set_title('Markowitz Efficient Frontier')
+    ax.set_title('Markowitz Efficient Frontier with CAL and Key Portfolios')
     ax.legend()
     st.pyplot(fig)
 
