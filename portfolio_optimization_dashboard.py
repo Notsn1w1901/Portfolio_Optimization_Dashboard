@@ -36,7 +36,7 @@ def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
 st.title('Portfolio Optimization Dashboard')
 
 # User input for tickers first
-st.subheader("Enter asset tickers (comma separated)")
+st.subheader("Enter asset tickers")
 
 # Initialize tickers list in session state
 if 'tickers' not in st.session_state:
