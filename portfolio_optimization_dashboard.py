@@ -190,6 +190,16 @@ else:
     ax.legend()
     st.pyplot(fig)
 
+      # Plot the Markowitz Efficient Frontier graph below the cumulative returns graph
+    st.subheader('Markowitz Efficient Frontier')
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(efficient_risks, efficient_returns, label="Efficient Frontier", color='green')
+    ax.set_xlabel('Risk (Standard Deviation)')
+    ax.set_ylabel('Expected Return')
+    ax.set_title('Markowitz Efficient Frontier')
+    ax.legend()
+    st.pyplot(fig)
+
     # Plot the portfolio weights as a pie chart
     st.subheader('Portfolio Weights Distribution')
     fig, ax = plt.subplots(figsize=(8, 8))
@@ -211,14 +221,4 @@ else:
         ax.text(bar.get_x() + bar.get_width() / 2, height + 50000, f'Rp {height:,.2f}', 
                  ha='center', va='bottom', fontsize=10, color='black')
 
-    st.pyplot(fig)
-
-    # Plot the Markowitz Efficient Frontier graph below the cumulative returns graph
-    st.subheader('Markowitz Efficient Frontier')
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(efficient_risks, efficient_returns, label="Efficient Frontier", color='green')
-    ax.set_xlabel('Risk (Standard Deviation)')
-    ax.set_ylabel('Expected Return')
-    ax.set_title('Markowitz Efficient Frontier')
-    ax.legend()
     st.pyplot(fig)
