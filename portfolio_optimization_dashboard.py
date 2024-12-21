@@ -36,25 +36,11 @@ def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
 st.title('Portfolio Optimization Dashboard')
 
 # User input for tickers
-st.subheader("Enter asset tickers")
+st.subheader("Enter asset tickers (separated by commas)")
 
-# Initialize tickers list in session state if not already initialized
-if 'tickers' not in st.session_state:
-    st.session_state['tickers'] = [""]  # Start with one empty ticker box
-
-# Dynamically add ticker input boxes
-for i in range(len(st.session_state['tickers'])):
-    ticker = st.text_input(f"Ticker {i+1}", st.session_state['tickers'][i], key=f"ticker_{i}")
-    
-    # Update the ticker in session state if filled
-    st.session_state['tickers'][i] = ticker
-    
-    # Only add a new empty ticker input box if the current one is filled and it's not the last one
-    if i == len(st.session_state['tickers']) - 1 and ticker != "":
-        st.session_state['tickers'].append("")  # Add a new empty ticker box after the last one
-
-# Clean the tickers list (remove empty strings)
-tickers = [ticker.strip() for ticker in st.session_state['tickers'] if ticker.strip() != ""]
+# Input for multiple tickers in one text box
+tickers_input = st.text_input("Tickers (e.g., AAPL, MSFT, TSLA)", "BTC-USD")
+tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
 
 # User input for risk-free rate
 st.subheader("Enter the risk-free rate (in %)")
@@ -74,7 +60,7 @@ start_date = end_date - timedelta(days=5*365)
 # Download adjusted close price data for each asset
 adj_close_df = pd.DataFrame()
 
-# Only fetch data for non-empty tickers
+# Fetch data for all tickers entered by the user
 for ticker in tickers:
     if ticker:  # Proceed only if the ticker is non-empty
         try:
