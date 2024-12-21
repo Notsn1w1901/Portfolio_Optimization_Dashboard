@@ -39,7 +39,7 @@ st.title('Portfolio Optimization Dashboard')
 st.subheader("Enter asset tickers (separated by commas)")
 
 # Input for multiple tickers in one text box
-tickers_input = st.text_input("Tickers (e.g., BTC-USD, BBCA.JK, TSLA)", "BBCA.JK")
+tickers_input = st.text_input("Tickers (e.g., BTC-USD, BBCA.JK, TSLA)", "BBCA.JK, BTC-USD")
 tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
 
 # User input for risk-free rate
