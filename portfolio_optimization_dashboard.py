@@ -40,7 +40,7 @@ st.subheader("Enter asset tickers")
 
 # Initialize tickers list in session state
 if 'tickers' not in st.session_state:
-    st.session_state['tickers'] = ["BTC-USD"]  # Default ticker
+    st.session_state['tickers'] = ["For Crypto Ticker-USD/For Stocks Ticker.JK"]  # Default ticker
 
 # Display existing tickers and allow user to edit
 for i, ticker in enumerate(st.session_state['tickers']):
