@@ -121,7 +121,7 @@ else:
         return portfolio_return, portfolio_risk
 
     # Generate the Efficient Frontier with error handling
-    target_risks = np.linspace(0.01, 0.50, 100)  # 100 risk levels from 1% to 50%
+    target_risks = np.linspace(0, 1, 100)  # 100 risk levels from 1% to 50%
     efficient_returns = []
     efficient_risks = []
 
