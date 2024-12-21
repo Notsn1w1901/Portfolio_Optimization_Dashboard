@@ -35,20 +35,21 @@ def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
 # Streamlit app structure
 st.title('Portfolio Optimization Dashboard')
 
-# User input for tickers first
+# User input for tickers
 st.subheader("Enter asset tickers")
 
-# Initialize tickers list in session state
+# Initialize tickers list in session state if not already initialized
 if 'tickers' not in st.session_state:
-    st.session_state['tickers'] = ["BTC-USD"]  # Default ticker
+    st.session_state['tickers'] = [""]  # Start with one empty ticker box
 
-# Display existing tickers and allow user to edit
-for i, ticker in enumerate(st.session_state['tickers']):
-    st.session_state['tickers'][i] = st.text_input(f"Ticker {i+1}", ticker, key=f"ticker_{i}")
-
-# Automatically add an empty ticker box if the last ticker input is filled
-if st.session_state['tickers'][-1] != "" and len(st.session_state['tickers']) < 10:
-    st.session_state['tickers'].append("")  # Add a new empty ticker input box
+# Dynamically add ticker input boxes
+for i in range(len(st.session_state['tickers'])):
+    ticker = st.text_input(f"Ticker {i+1}", st.session_state['tickers'][i], key=f"ticker_{i}")
+    
+    # Check if the ticker box is filled and it's the last one
+    if ticker.strip() != "" and i == len(st.session_state['tickers']) - 1:
+        # Add a new empty ticker input box after the last one if it's filled
+        st.session_state['tickers'].append("")  # Add a new empty ticker box
 
 # Clean the tickers list (remove empty strings)
 tickers = [ticker.strip() for ticker in st.session_state['tickers'] if ticker.strip() != ""]
