@@ -2,6 +2,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from datetime import datetime, timedelta
 from scipy.optimize import minimize
 import requests  # For getting the current exchange rate
@@ -200,16 +201,19 @@ else:
     ax.legend()
     st.pyplot(fig)
 
-    # Plot the Markowitz Efficient Frontier graph below the cumulative returns graph
+    # Plot the Markowitz Efficient Frontier graph below the cumulative returns graph using Seaborn
     st.subheader('Markowitz Efficient Frontier')
+    sns.set(style="whitegrid")
     fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # Efficient Frontier Plot
     ax.plot(efficient_risks, efficient_returns, label="Efficient Frontier", color='green')
     ax.scatter(efficient_risks, efficient_returns, color='blue', marker='o', label='Individual Portfolios')
     
-    # Calculate and plot the Capital Allocation Line (CAL)
+    # Capital Allocation Line (CAL)
     def cal_line(slope, risk_free_rate, x_vals):
         return risk_free_rate + slope * x_vals
-
+    
     # Tangency portfolio (max Sharpe ratio)
     tangency_weights = optimized_results.x
     tangency_return, tangency_risk = portfolio_metrics(tangency_weights, log_returns, cov_matrix)
@@ -240,27 +244,4 @@ else:
     ax.set_ylabel('Expected Return')
     ax.set_title('Markowitz Efficient Frontier with CAL and Key Portfolios')
     ax.legend()
-    st.pyplot(fig)
-
-    # Plot the portfolio weights as a pie chart
-    st.subheader('Portfolio Weights Distribution')
-    fig, ax = plt.subplots(figsize=(8, 8))
-    ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
-    ax.set_title('Optimal Portfolio Weights')
-    st.pyplot(fig)
-
-    # Plot the capital allocation in IDR as a bar chart
-    st.subheader('Capital Allocation in IDR')
-    fig, ax = plt.subplots(figsize=(10, 6))
-    bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
-    ax.set_xlabel('Assets')
-    ax.set_ylabel('Allocated Capital (Rp)')
-    ax.set_title('Capital Allocation for Investment (in IDR)')
-
-    # Annotate the bars with capital amounts
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, height + 50000, f'Rp {height:,.2f}', 
-                 ha='center', va='bottom', fontsize=10, color='black')
-
     st.pyplot(fig)
