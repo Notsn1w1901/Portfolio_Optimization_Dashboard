@@ -124,6 +124,7 @@ else:
     target_risks = np.linspace(0, 1, 100)  # 100 risk levels from 1% to 50%
     efficient_returns = []
     efficient_risks = []
+    all_weights = []
 
     for target_risk in target_risks:
         # Minimize the negative expected return for each target risk (Markowitz optimization)
@@ -144,10 +145,12 @@ else:
             efficient_return, efficient_risk = portfolio_metrics(result.x, log_returns, cov_matrix)
             efficient_returns.append(efficient_return)
             efficient_risks.append(efficient_risk)
+            all_weights.append(result.x)  # Save the portfolio weights
         else:
             # Append NaN values if optimization fails (just continue to next iteration)
             efficient_returns.append(np.nan)
             efficient_risks.append(np.nan)
+            all_weights.append(np.nan)
 
     # Fixed portfolio constraints
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
@@ -201,6 +204,7 @@ else:
     st.subheader('Markowitz Efficient Frontier')
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(efficient_risks, efficient_returns, label="Efficient Frontier", color='green')
+    ax.scatter(efficient_risks, efficient_returns, color='blue', marker='o', label='Individual Portfolios')
     ax.set_xlabel('Risk (Standard Deviation)')
     ax.set_ylabel('Expected Return')
     ax.set_title('Markowitz Efficient Frontier')
