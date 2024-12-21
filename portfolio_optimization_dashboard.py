@@ -46,6 +46,7 @@ The portfolio is optimized with the objective of maximizing the Sharpe ratio, wh
 You will also be able to visualize the portfolio's performance, weight distribution, and capital allocation.
 
 Sincerely,
+
 Winston Honadi
 """)
 
