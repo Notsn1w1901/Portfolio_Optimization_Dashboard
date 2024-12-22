@@ -69,7 +69,6 @@ years_of_data = st.sidebar.number_input("Years of Data", min_value=1, max_value=
 max_weight = st.sidebar.number_input("Maximum weight per asset (%)", min_value=1, max_value=100, value=50) / 100
 min_weight = st.sidebar.number_input("Minimum weight per asset (%)", min_value=0, max_value=100, value=0) / 100
 
-
 # Define the time period for the data
 end_date = datetime.today()
 start_date = end_date - timedelta(days=years_of_data * 365)  # Use user input for years
