@@ -145,9 +145,6 @@ else:
     # Calculate portfolio returns and cumulative returns
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
     cumulative_returns = (1 + portfolio_returns).cumprod()
-
-    # Create a single row with multiple columns for visualization
-    st.markdown("### Portfolio Performance Visualizations")
     
     # Create 3 columns layout for horizontal stacking
     col1, col2, col3 = st.columns(3)
