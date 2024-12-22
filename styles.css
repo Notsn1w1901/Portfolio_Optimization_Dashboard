@@ -17,13 +17,13 @@ h1 {
 
 /* Sidebar Styling */
 .sidebar .sidebar-content {
-    background-color: #000000;
-    color: #000000;  /* Change the font color to black */
+    background-color: #000000;  /* Black background for sidebar */
+    color: #ECF0F1;  /* White text color */
 }
 
 .sidebar .sidebar-header {
-    background-color: #000000;
-    color: #000000;
+    background-color: #000000;  /* Black background for sidebar header */
+    color: #ECF0F1;  /* White text color for header */
 }
 
 .sidebar .sidebar-header h2 {
@@ -31,6 +31,7 @@ h1 {
     font-weight: 600;
 }
 
+/* Button Styling */
 .stButton>button {
     background-color: #16A085;
     color: white;
