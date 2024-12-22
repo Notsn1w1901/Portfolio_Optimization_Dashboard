@@ -5,15 +5,6 @@
     padding: 20px;
 }
 
-st.sidebar.markdown(
-    """
-    <div style="text-align: center; margin-bottom: 20px;">
-        <img src="Designer.png" alt="Logo" style="width: 150px; border-radius: 10px;">
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
 .sidebar .sidebar-header {
     background-color: #2C3E50;  /* Dark blue header for the sidebar */
     color: #ECF0F1;  /* White text color for header */
