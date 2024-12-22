@@ -1,23 +1,6 @@
-/* Custom CSS for Streamlit Dashboard */
-
-/* General Styling */
-body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f7fc;
-}
-
-/* Title Styling */
-h1 {
-    font-size: 2.5rem;
-    color: #2C3E50;
-    font-weight: bold;
-    text-align: center;
-    margin-top: 20px;
-}
-
 /* Sidebar Styling */
 .sidebar .sidebar-content {
-    background-color: #000000;  /* Black background for sidebar */
+    background-color: #1A1A1D; /* Slightly lighter black for sidebar */
     color: #ECF0F1;  /* White text color */
     padding: 20px;
 }
@@ -26,6 +9,7 @@ h1 {
     background-color: #2C3E50;  /* Dark blue header for the sidebar */
     color: #ECF0F1;  /* White text color for header */
     padding: 10px 15px;
+    border-bottom: 1px solid #BDC3C7;
 }
 
 .sidebar .sidebar-header h2 {
@@ -35,86 +19,44 @@ h1 {
 
 /* Sidebar Widgets */
 .stTextInput, .stNumberInput, .stSelectbox, .stButton>button {
-    background-color: transparent;  /* Transparent background */
+    background-color: #333333;  /* Dark gray for inputs */
     color: #ECF0F1;  /* White text color */
     font-size: 1rem;
-    padding: 8px 12px;
+    padding: 10px;
     border-radius: 5px;
-    margin-bottom: 12px;
+    margin-bottom: 15px;
     width: 100%;
-    border: 1px solid #BDC3C7;  /* Light border to maintain structure */
+    border: 1px solid #555555;  /* Subtle contrast border */
 }
 
 .stTextInput input, .stNumberInput input, .stSelectbox select {
-    background-color: transparent;  /* Transparent background for input fields */
+    background-color: #333333;  /* Dark gray for input fields */
     color: #ECF0F1;  /* White text color */
-    border: 1px solid #BDC3C7;  /* Light border */
+    border: 1px solid #555555;  /* Subtle border */
     border-radius: 5px;
 }
 
 .stButton>button {
-    background-color: #16A085;
+    background-color: #16A085;  /* Green background for buttons */
     color: white;
     font-weight: bold;
     border-radius: 5px;
     padding: 10px 20px;
+    border: none;
+    box-shadow: none;
 }
 
 .stButton>button:hover {
     background-color: #1ABC9C;
 }
 
-/* Graph Styling */
-.stImage, .stPlot {
-    border-radius: 8px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 30px;
+/* Sidebar Hover Effects */
+.stTextInput:hover, .stNumberInput:hover, .stSelectbox:hover {
+    background-color: #444444;  /* Slightly lighter gray on hover */
+    border-color: #666666;  /* Subtle hover effect */
 }
 
-/* DataFrame Table Styling */
-.dataframe {
-    border-collapse: collapse;
-}
-
-.dataframe th, .dataframe td {
-    padding: 12px 20px;
-    border: 1px solid #ddd;
-}
-
-.dataframe th {
-    background-color: #2C3E50;
-    color: #ECF0F1;
-}
-
-.dataframe td {
-    text-align: center;
-    color: #2C3E50;
-}
-
-/* Subheader Styling */
-h3, .stSubheader {
-    font-size: 1.5rem;
-    color: #2C3E50;
-    margin-bottom: 10px;
-    font-weight: 600;
-}
-
-/* Bar Chart Styling */
-.bar {
-    border-radius: 8px;
-    padding: 10px;
-    background-color: #ecf0f1;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.stSelectbox, .stTextInput, .stNumberInput {
-    font-size: 1.1rem;
-    padding: 8px;
-    border-radius: 5px;
-    background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.stSelectbox:hover, .stTextInput:hover, .stNumberInput:hover {
-    background-color: #f1f1f1;
+/* General Adjustments for Sidebar */
+.sidebar .stButton>button:hover {
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2);
 }
