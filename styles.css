@@ -19,11 +19,13 @@ h1 {
 .sidebar .sidebar-content {
     background-color: #000000;  /* Black background for sidebar */
     color: #ECF0F1;  /* White text color */
+    padding: 20px;
 }
 
 .sidebar .sidebar-header {
-    background-color: #000000;  /* Black background for sidebar header */
+    background-color: #2C3E50;  /* Dark blue header for the sidebar */
     color: #ECF0F1;  /* White text color for header */
+    padding: 10px 15px;
 }
 
 .sidebar .sidebar-header h2 {
@@ -31,7 +33,24 @@ h1 {
     font-weight: 600;
 }
 
-/* Button Styling */
+/* Sidebar Widgets */
+.stTextInput, .stNumberInput, .stSelectbox, .stButton>button {
+    background-color: #2C3E50;  /* Dark background for widgets */
+    color: #ECF0F1;  /* White text color for widgets */
+    font-size: 1rem;
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+.stTextInput input, .stNumberInput input, .stSelectbox select {
+    background-color: #2C3E50;  /* Dark background for input fields */
+    color: #ECF0F1;  /* White text color */
+    border: 1px solid #BDC3C7;
+    border-radius: 5px;
+}
+
 .stButton>button {
     background-color: #16A085;
     color: white;
@@ -77,14 +96,6 @@ h3, .stSubheader {
     color: #2C3E50;
     margin-bottom: 10px;
     font-weight: 600;
-}
-
-/* Buttons & Inputs */
-.stButton>button, .stTextInput>input, .stNumberInput>input {
-    font-size: 1rem;
-    color: #2C3E50;
-    border-radius: 5px;
-    padding: 8px;
 }
 
 /* Bar Chart Styling */
