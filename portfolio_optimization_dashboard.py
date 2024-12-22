@@ -60,6 +60,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar Inputs for User Interactivity
+st.sidebar.image("Designer.png", use_column_width=True)  # Add logo to the sidebar
 st.sidebar.markdown(
     """
     <div style="text-align: center; margin-bottom: 20px;">
