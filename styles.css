@@ -5,6 +5,15 @@
     padding: 20px;
 }
 
+st.sidebar.markdown(
+    """
+    <div style="text-align: center; margin-bottom: 20px;">
+        <img src="Designer.png" alt="Logo" style="width: 150px; border-radius: 10px;">
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 .sidebar .sidebar-header {
     background-color: #2C3E50;  /* Dark blue header for the sidebar */
     color: #ECF0F1;  /* White text color for header */
@@ -49,12 +58,3 @@
     border-color: #1ABC9C;  /* Bright teal for focus */
     box-shadow: 0 0 8px rgba(26, 188, 156, 0.5);  /* Glow effect */
 }
-# Add the centered and resized logo to the sidebar
-st.sidebar.markdown(
-    """
-    <div style="text-align: center; margin-bottom: 20px;">
-        <img src="Designer.png" alt="Logo" style="width: 150px; border-radius: 10px;">
-    </div>
-    """,
-    unsafe_allow_html=True
-)
