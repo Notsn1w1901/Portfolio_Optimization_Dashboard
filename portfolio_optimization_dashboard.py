@@ -149,8 +149,8 @@ else:
 
     # Display Portfolio Expected Return and Risk
     st.subheader('Portfolio Metrics')
-    st.write(f"📊 **Portfolio Expected Return (Annualized)**: {portfolio_expected_return:.2f}%")
-    st.write(f"📉 **Portfolio Risk (Standard Deviation)**: {portfolio_risk:.2f}")
+    st.write(f"📊 **Portfolio Expected Return (Annualized)**: {portfolio_expected_return:.2f}*100%")
+    st.write(f"📉 **Portfolio Risk (Standard Deviation)**: {portfolio_risk:.2f}*100%")
 
     # Calculate portfolio returns and cumulative returns
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
