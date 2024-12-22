@@ -146,38 +146,44 @@ else:
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
     cumulative_returns = (1 + portfolio_returns).cumprod()
 
-    # Create a single column layout to stack all graphs
+    # Create a single row with multiple columns for visualization
     st.markdown("### Portfolio Performance Visualizations")
+    
+    # Create 3 columns layout for horizontal stacking
+    col1, col2, col3 = st.columns(3)
 
-    # Cumulative Returns Graph
-    st.subheader('Portfolio Cumulative Returns')
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(cumulative_returns, label='Optimized Portfolio', color="#4CAF50", linewidth=2)
-    ax.set_title('Portfolio Performance (Cumulative Returns)', fontsize=14, fontweight='bold')
-    ax.set_xlabel('Time (Days)', fontsize=12)
-    ax.set_ylabel('Cumulative Returns', fontsize=12)
-    ax.legend()
-    st.pyplot(fig)
+    with col1:
+        # Cumulative Returns Graph
+        st.subheader('Portfolio Cumulative Returns')
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.plot(cumulative_returns, label='Optimized Portfolio', color="#4CAF50", linewidth=2)
+        ax.set_title('Portfolio Performance (Cumulative Returns)', fontsize=14, fontweight='bold')
+        ax.set_xlabel('Time (Days)', fontsize=12)
+        ax.set_ylabel('Cumulative Returns', fontsize=12)
+        ax.legend()
+        st.pyplot(fig)
 
-    # Portfolio Weights Distribution Graph (Pie chart)
-    st.subheader('Portfolio Weights Distribution')
-    fig, ax = plt.subplots(figsize=(8, 8))
-    ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
-    ax.set_title('Optimal Portfolio Weights', fontsize=14, fontweight='bold')
-    st.pyplot(fig)
+    with col2:
+        # Portfolio Weights Distribution Graph (Pie chart)
+        st.subheader('Portfolio Weights Distribution')
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
+        ax.set_title('Optimal Portfolio Weights', fontsize=14, fontweight='bold')
+        st.pyplot(fig)
 
-    # Capital Allocation in IDR Graph (Bar chart)
-    st.subheader('Capital Allocation in IDR')
-    fig, ax = plt.subplots(figsize=(10, 6))
-    bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
-    ax.set_xlabel('Assets', fontsize=12)
-    ax.set_ylabel('Allocated Capital (Rp)', fontsize=12)
-    ax.set_title('Capital Allocation for Investment (in IDR)', fontsize=14, fontweight='bold')
+    with col3:
+        # Capital Allocation in IDR Graph (Bar chart)
+        st.subheader('Capital Allocation in IDR')
+        fig, ax = plt.subplots(figsize=(8, 6))
+        bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
+        ax.set_xlabel('Assets', fontsize=12)
+        ax.set_ylabel('Allocated Capital (Rp)', fontsize=12)
+        ax.set_title('Capital Allocation for Investment (in IDR)', fontsize=14, fontweight='bold')
 
-    # Annotate the bars with capital amounts
-    for bar in bars:
-        height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2, height + 50000, f'Rp {height:,.2f}', 
-                 ha='center', va='bottom', fontsize=10, color='black')
+        # Annotate the bars with capital amounts
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2, height + 50000, f'Rp {height:,.2f}', 
+                     ha='center', va='bottom', fontsize=10, color='black')
 
-    st.pyplot(fig)
+        st.pyplot(fig)
