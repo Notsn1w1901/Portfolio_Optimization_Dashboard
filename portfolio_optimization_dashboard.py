@@ -33,57 +33,38 @@ def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
     return -sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate)
 
 # Streamlit app structure
-st.title('Portfolio Optimization Dashboard')
+st.set_page_config(page_title="Portfolio Optimization", layout="wide", initial_sidebar_state="expanded")
+st.title('📈 Portfolio Optimization Dashboard')
 
 # Short description of the dashboard functionality
-st.write("""
-This dashboard allows you to optimize a portfolio of assets by allocating capital across multiple tickers based on historical price data. 
-You can enter asset tickers (e.g., stocks, cryptocurrencies), specify the investment amount in IDR (Indonesian Rupiah), and set the number of years 
-of historical data to be used for analysis. The dashboard will calculate the optimal portfolio weights using the Sharpe ratio optimization method, 
-and display the expected return, risk (standard deviation), and capital allocation for each asset in both IDR and USD.
+st.markdown("""
+    This dashboard allows you to optimize a portfolio of assets by allocating capital across multiple tickers based on historical price data. 
+    You can enter asset tickers (e.g., stocks, cryptocurrencies), specify the investment amount in IDR (Indonesian Rupiah), and set the number of years 
+    of historical data to be used for analysis. The dashboard will calculate the optimal portfolio weights using the Sharpe ratio optimization method, 
+    and display the expected return, risk (standard deviation), and capital allocation for each asset in both IDR and USD.
+    
+    The portfolio is optimized with the objective of maximizing the Sharpe ratio, which represents the best risk-adjusted return. 
+    You will also be able to visualize the portfolio's performance, weight distribution, and capital allocation.
+    
+    Sincerely,  
+    **Winston Honadi**
+""", unsafe_allow_html=True)
 
-The portfolio is optimized with the objective of maximizing the Sharpe ratio, which represents the best risk-adjusted return. 
-You will also be able to visualize the portfolio's performance, weight distribution, and capital allocation.
-
-Sincerely,
-
-Winston Honadi
-""")
-
-# User input for tickers
-st.subheader("Enter asset tickers (separated by commas)")
-
-# Input for multiple tickers in one text box
-tickers_input = st.text_input("Tickers (e.g., BBCA.JK, BTC-USD, TSLA)", "BBCA.JK, BTC-USD")
-tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
-
-# User input for risk-free rate
-st.subheader("Enter the risk-free rate (in %)")
-
-# Risk-free rate input (convert percentage to decimal)
-risk_free_rate_input = st.number_input("Risk-Free Rate (%)", value=6.0, step=0.1) / 100  # Convert percentage to decimal
-
-# User input for investment amount
-st.subheader("Enter your investment amount (in IDR)")
-
-investment_amount_idr = st.number_input("Investment Amount (IDR)", value=10000000, step=100000)
-
-# User input for the number of years of data to be used
-st.subheader("Enter the number of years of data to use")
-
-years_of_data = st.number_input("Years of Data", min_value=1, max_value=20, value=5, step=1)  # User-defined years
-
-# User input for max and min asset weights
-st.subheader("Set Portfolio Constraints")
-
-max_weight = st.number_input("Maximum weight per asset (%)", min_value=1, max_value=100, value=50) / 100
-min_weight = st.number_input("Minimum weight per asset (%)", min_value=0, max_value=100, value=0) / 100
+# Sidebar Inputs for User Interactivity
+st.sidebar.header("Portfolio Inputs")
+tickers_input = st.sidebar.text_input("Enter asset tickers (e.g., BBCA.JK, BTC-USD, TSLA)", "BBCA.JK, BTC-USD")
+risk_free_rate_input = st.sidebar.number_input("Risk-Free Rate (%)", value=6.0, step=0.1) / 100  # Convert percentage to decimal
+investment_amount_idr = st.sidebar.number_input("Investment Amount (IDR)", value=10000000, step=100000)
+years_of_data = st.sidebar.number_input("Years of Data", min_value=1, max_value=20, value=5, step=1)
+max_weight = st.sidebar.number_input("Maximum weight per asset (%)", min_value=1, max_value=100, value=50) / 100
+min_weight = st.sidebar.number_input("Minimum weight per asset (%)", min_value=0, max_value=100, value=0) / 100
 
 # Define the time period for the data
 end_date = datetime.today()
 start_date = end_date - timedelta(days=years_of_data * 365)  # Use user input for years
 
 # Download adjusted close price data for each asset
+tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
 adj_close_df = pd.DataFrame()
 
 # Fetch data for all tickers entered by the user
@@ -114,10 +95,8 @@ else:
     # Covariance matrix for the log returns
     cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
 
-    # Fixed portfolio constraints
+    # Portfolio optimization constraints
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
-
-    # Adding the constraints for the maximum and minimum weight per asset
     for i in range(len(tickers)):
         constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: weights[i] - min_weight})
         constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: max_weight - weights[i]})
@@ -147,8 +126,12 @@ else:
 
     # Display optimal weights and capital allocation
     st.subheader('Optimal Portfolio Weights and Capital Allocation')
-    for ticker, weight, capital in zip(tickers, optimal_weights, capital_allocation_idr):
-        st.write(f"{ticker}: Weight = {weight:.4f}, Allocated Capital = Rp {capital:,.2f}")
+    portfolio_df = pd.DataFrame({
+        'Asset': tickers,
+        'Weight': optimal_weights,
+        'Allocated Capital (IDR)': capital_allocation_idr
+    })
+    st.dataframe(portfolio_df.style.format({'Allocated Capital (IDR)': "Rp {:,.2f}", 'Weight': "{:.4f}"}))
 
     # Calculate Portfolio Expected Return and Risk
     portfolio_expected_return = expected_return(optimal_weights, log_returns)
@@ -156,8 +139,8 @@ else:
 
     # Display Portfolio Expected Return and Risk
     st.subheader('Portfolio Metrics')
-    st.write(f"Portfolio Expected Return (Annualized): {portfolio_expected_return:.2f}%")
-    st.write(f"Portfolio Risk (Standard Deviation): {portfolio_risk:.2f}")
+    st.write(f"📊 **Portfolio Expected Return (Annualized)**: {portfolio_expected_return:.2f}%")
+    st.write(f"📉 **Portfolio Risk (Standard Deviation)**: {portfolio_risk:.2f}")
 
     # Calculate portfolio returns and cumulative returns
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
@@ -166,10 +149,10 @@ else:
     # Plot the cumulative returns of the portfolio
     st.subheader('Portfolio Cumulative Returns')
     fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(cumulative_returns, label='Optimized Portfolio')
-    ax.set_title('Portfolio Performance (Cumulative Returns)')
-    ax.set_xlabel('Time (Days)')
-    ax.set_ylabel('Cumulative Returns')
+    ax.plot(cumulative_returns, label='Optimized Portfolio', color="#4CAF50", linewidth=2)
+    ax.set_title('Portfolio Performance (Cumulative Returns)', fontsize=14, fontweight='bold')
+    ax.set_xlabel('Time (Days)', fontsize=12)
+    ax.set_ylabel('Cumulative Returns', fontsize=12)
     ax.legend()
     st.pyplot(fig)
 
@@ -177,16 +160,16 @@ else:
     st.subheader('Portfolio Weights Distribution')
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
-    ax.set_title('Optimal Portfolio Weights')
+    ax.set_title('Optimal Portfolio Weights', fontsize=14, fontweight='bold')
     st.pyplot(fig)
 
     # Plot the capital allocation in IDR as a bar chart
     st.subheader('Capital Allocation in IDR')
     fig, ax = plt.subplots(figsize=(10, 6))
     bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
-    ax.set_xlabel('Assets')
-    ax.set_ylabel('Allocated Capital (Rp)')
-    ax.set_title('Capital Allocation for Investment (in IDR)')
+    ax.set_xlabel('Assets', fontsize=12)
+    ax.set_ylabel('Allocated Capital (Rp)', fontsize=12)
+    ax.set_title('Capital Allocation for Investment (in IDR)', fontsize=14, fontweight='bold')
 
     # Annotate the bars with capital amounts
     for bar in bars:
