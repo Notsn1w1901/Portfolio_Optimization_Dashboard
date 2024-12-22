@@ -144,13 +144,13 @@ else:
     st.dataframe(portfolio_df.style.format({'Allocated Capital (IDR)': "Rp {:,.2f}", 'Weight': "{:.4f}"}))
 
     # Calculate Portfolio Expected Return and Risk
-    portfolio_expected_return = expected_return(optimal_weights, log_returns)
-    portfolio_risk = standard_deviation(optimal_weights, cov_matrix)
+    portfolio_expected_return = expected_return(optimal_weights, log_returns)*100
+    portfolio_risk = standard_deviation(optimal_weights, cov_matrix)*100
 
     # Display Portfolio Expected Return and Risk
     st.subheader('Portfolio Metrics')
-    st.write(f"📊 **Portfolio Expected Return (Annualized)**: {portfolio_expected_return:.2f}*100%")
-    st.write(f"📉 **Portfolio Risk (Standard Deviation)**: {portfolio_risk:.2f}*100%")
+    st.write(f"📊 **Portfolio Expected Return (Annualized)**: {portfolio_expected_return:.2f}%")
+    st.write(f"📉 **Portfolio Risk (Standard Deviation)**: {portfolio_risk:.2f}%")
 
     # Calculate portfolio returns and cumulative returns
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
