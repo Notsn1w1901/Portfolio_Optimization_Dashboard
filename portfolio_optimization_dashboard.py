@@ -34,6 +34,15 @@ def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
 
 # Streamlit app structure
 st.set_page_config(page_title="Portfolio Optimization", layout="wide", initial_sidebar_state="expanded")
+
+# Load custom CSS from external file (styles.css)
+with open("styles.css") as f:
+    css = f.read()
+
+# Inject the CSS into Streamlit
+st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+
+# Title of the app
 st.title('📈 Portfolio Optimization Dashboard')
 
 # Short description of the dashboard functionality
