@@ -146,7 +146,10 @@ else:
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
     cumulative_returns = (1 + portfolio_returns).cumprod()
 
-    # Plot the cumulative returns of the portfolio
+    # Create a single column layout to stack all graphs
+    st.markdown("### Portfolio Performance Visualizations")
+
+    # Cumulative Returns Graph
     st.subheader('Portfolio Cumulative Returns')
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(cumulative_returns, label='Optimized Portfolio', color="#4CAF50", linewidth=2)
@@ -156,14 +159,14 @@ else:
     ax.legend()
     st.pyplot(fig)
 
-    # Plot the portfolio weights as a pie chart
+    # Portfolio Weights Distribution Graph (Pie chart)
     st.subheader('Portfolio Weights Distribution')
     fig, ax = plt.subplots(figsize=(8, 8))
     ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
     ax.set_title('Optimal Portfolio Weights', fontsize=14, fontweight='bold')
     st.pyplot(fig)
 
-    # Plot the capital allocation in IDR as a bar chart
+    # Capital Allocation in IDR Graph (Bar chart)
     st.subheader('Capital Allocation in IDR')
     fig, ax = plt.subplots(figsize=(10, 6))
     bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
