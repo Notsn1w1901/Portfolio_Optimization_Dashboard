@@ -60,7 +60,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Sidebar Inputs for User Interactivity
-st.sidebar.image("Designer.png", use_column_width=True)  # Add logo to the sidebar
+st.sidebar.image("Designer.png", use_container_width=True)  # Add logo to the sidebar
 st.sidebar.header("Portfolio Inputs")
 tickers_input = st.sidebar.text_input("Enter asset tickers (e.g., BBCA.JK, BTC-USD, TSLA)", "BBCA.JK, BTC-USD")
 risk_free_rate_input = st.sidebar.number_input("Risk-Free Rate (%)", value=6.0, step=0.1) / 100  # Convert percentage to decimal
@@ -68,6 +68,7 @@ investment_amount_idr = st.sidebar.number_input("Investment Amount (IDR)", value
 years_of_data = st.sidebar.number_input("Years of Data", min_value=1, max_value=20, value=5, step=1)
 max_weight = st.sidebar.number_input("Maximum weight per asset (%)", min_value=1, max_value=100, value=50) / 100
 min_weight = st.sidebar.number_input("Minimum weight per asset (%)", min_value=0, max_value=100, value=0) / 100
+
 
 # Define the time period for the data
 end_date = datetime.today()
