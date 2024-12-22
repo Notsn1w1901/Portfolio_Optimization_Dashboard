@@ -18,7 +18,7 @@ h1 {
 /* Sidebar Styling */
 .sidebar .sidebar-content {
     background-color: #34495E;
-    color: #ECF0F1;
+    color: #000000;  /* Change the font color to black */
 }
 
 .sidebar .sidebar-header {
