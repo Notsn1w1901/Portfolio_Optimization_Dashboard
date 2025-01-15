@@ -109,16 +109,26 @@ st.markdown("""
 This dashboard empowers you to optimize investment portfolios.
 
 Key Features:
+
 • Allocate capital across multiple assets (stocks, cryptocurrencies, etc.)
+
 • Define investment amount in IDR.
+
 • Specify historical price data timeframe.
+
 • Employ Sharpe Ratio optimization for optimal asset allocation.
 
+
 Outputs:
+
 • Expected portfolio return.
+
 • Portfolio risk (standard deviation).
+
 • Capital allocation per asset in IDR.
+
 • Visualizations of portfolio performance, weight distribution, and capital allocation.
+
 
 Objective: Maximize risk-adjusted returns by optimizing the Sharpe Ratio.
 """, unsafe_allow_html=True)
