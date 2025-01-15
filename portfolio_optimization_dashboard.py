@@ -75,6 +75,20 @@ st.markdown("""
 # Title of the app
 st.title('📈 Portfolio Optimization Dashboard')
 
+# Short description of the dashboard functionality
+st.markdown("""
+    This dashboard allows you to optimize a portfolio of assets by allocating capital across multiple tickers based on historical price data. 
+    You can enter asset tickers (e.g., stocks, cryptocurrencies), specify the investment amount in IDR (Indonesian Rupiah), and set the number of years 
+    of historical data to be used for analysis. The dashboard will calculate the optimal portfolio weights using the Sharpe ratio optimization method, 
+    and display the expected return, risk (standard deviation), and capital allocation for each asset in IDR.
+    
+    The portfolio is optimized with the objective of maximizing the Sharpe ratio, which represents the best risk-adjusted return. 
+    You will also be able to visualize the portfolio's performance, weight distribution, and capital allocation.
+    
+    Sincerely,  
+    **Winston Honadi**
+""", unsafe_allow_html=True)
+
 # Sidebar Inputs for User Interactivity
 st.sidebar.header("Portfolio Inputs")
 tickers_input = st.sidebar.text_input("Enter asset tickers (e.g., BBCA.JK, BTC-USD, TSLA)", "BBCA.JK, BTC-USD")
