@@ -15,7 +15,7 @@ def expected_return(weights, log_returns):
     return np.sum(log_returns.mean() * weights) * 252  # Annualized expected return
 
 def sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
-    return (expected_return(weights, log_returns, cov_matrix, risk_free_rate) - risk_free_rate) / standard_deviation(weights, cov_matrix)
+    return (expected_return(weights, log_returns) - risk_free_rate) / standard_deviation(weights, cov_matrix)
 
 def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
     return -sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate)
@@ -53,6 +53,7 @@ st.sidebar.header("Portfolio Inputs")
 tickers_input = st.sidebar.text_input("Enter asset tickers (e.g., BBCA.JK, BTC-USD, TSLA)", "BBCA.JK, BTC-USD")
 risk_free_rate_input = st.sidebar.number_input("Risk-Free Rate (%)", value=6.0, step=0.1) / 100  # Convert percentage to decimal
 investment_amount_idr = st.sidebar.number_input("Investment Amount (IDR)", value=10000000, step=100000)
+usd_to_idr = st.sidebar.number_input("Current USD Price in IDR", value=14000.0, step=100.0)  # User input for USD to IDR conversion
 years_of_data = st.sidebar.number_input("Years of Data", min_value=1, max_value=20, value=5, step=1)
 max_weight = st.sidebar.number_input("Maximum weight per asset (%)", min_value=1, max_value=100, value=50) / 100
 min_weight = st.sidebar.number_input("Minimum weight per asset (%)", min_value=0, max_value=100, value=0) / 100
@@ -113,8 +114,11 @@ else:
     # Capital allocation for each asset in IDR
     capital_allocation_idr = optimal_weights * investment_amount_idr
 
-    # Calculate the amount of shares for each asset (rounded down to the nearest whole number)
-    amount_of_shares = np.floor(capital_allocation_idr / adj_close_df.iloc[-1].values)
+    # Calculate the amount of shares for each asset, considering USD to IDR conversion for USD-denominated assets
+    amount_of_shares = [
+        np.floor((capital / usd_to_idr) / adj_close_df[ticker].iloc[-1] if '-USD' in ticker else capital / adj_close_df[ticker].iloc[-1])
+        for capital, ticker in zip(capital_allocation_idr, tickers)
+    ]
 
     # Create DataFrame for portfolio details
     portfolio_df = pd.DataFrame({
