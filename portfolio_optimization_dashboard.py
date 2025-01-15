@@ -1,3 +1,7 @@
+Share
+
+
+You said:
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -5,7 +9,6 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from scipy.optimize import minimize
 import streamlit as st
-import seaborn as sns
 
 # Functions for portfolio statistics
 def standard_deviation(weights, cov_matrix):
@@ -28,7 +31,9 @@ def sortino_ratio(weights, log_returns, cov_matrix, risk_free_rate):
     return (expected_return(weights, log_returns) - risk_free_rate) / downside_deviation
 
 def max_drawdown(cumulative_returns):
+    # Ensure cumulative_returns is a Pandas Series
     cumulative_returns = pd.Series(cumulative_returns)
+    
     peak = cumulative_returns.cummax()  # Calculate the running maximum of cumulative returns
     drawdown = (cumulative_returns - peak) / peak  # Calculate drawdown
     return drawdown.min()  # Return the maximum drawdown (most negative value)
@@ -38,48 +43,6 @@ def value_at_risk(returns, confidence_level=0.95):
 
 def expected_shortfall(returns, var):
     return returns[returns <= var].mean()
-
-# Additional Metrics
-def beta(portfolio_returns, benchmark_returns):
-    # Ensure both returns are pandas Series with aligned indices
-    portfolio_returns = pd.Series(portfolio_returns)
-    benchmark_returns = pd.Series(benchmark_returns)
-
-    if portfolio_returns.isnull().any() or benchmark_returns.isnull().any():
-        raise ValueError("Portfolio or benchmark returns contain missing values.")
-    
-    common_dates = portfolio_returns.index.intersection(benchmark_returns.index)
-    portfolio_returns_aligned = portfolio_returns[common_dates]
-    benchmark_returns_aligned = benchmark_returns[common_dates]
-    
-    # Calculate the covariance matrix between the portfolio returns and benchmark returns
-    covariance_matrix = np.cov(portfolio_returns_aligned, benchmark_returns_aligned)
-    
-    # Return the beta as the ratio of the covariance between the portfolio and the benchmark to the variance of the benchmark
-    return covariance_matrix[0, 1] / np.var(benchmark_returns_aligned)
-
-def treynor_ratio(weights, log_returns, cov_matrix, risk_free_rate, benchmark_returns):
-    portfolio_return = expected_return(weights, log_returns)
-    beta_val = beta(np.dot(log_returns.values, weights), benchmark_returns)
-    return (portfolio_return - risk_free_rate) / beta_val
-
-def jensen_alpha(weights, log_returns, risk_free_rate, benchmark_returns):
-    portfolio_return = expected_return(weights, log_returns)
-    beta_val = beta(np.dot(log_returns.values, weights), benchmark_returns)
-    market_return = expected_return(np.ones(len(benchmark_returns)) / len(benchmark_returns), benchmark_returns)
-    return portfolio_return - (risk_free_rate + beta_val * (market_return - risk_free_rate))
-
-def tracking_error(portfolio_returns, benchmark_returns):
-    return np.std(portfolio_returns - benchmark_returns)
-
-def conditional_value_at_risk(returns, var):
-    return np.mean(returns[returns <= var])
-
-def skewness(returns):
-    return returns.skew()
-
-def kurtosis(returns):
-    return returns.kurtosis()
 
 # Streamlit app structure
 st.set_page_config(page_title="Portfolio Optimization", layout="wide", initial_sidebar_state="expanded")
@@ -145,20 +108,6 @@ for ticker in tickers:
             st.error(f"Error fetching data for {ticker}: {e}")
             continue
 
-# Fetch benchmark data (e.g., ^JKSE for Indonesian stock index)
-try:
-    benchmark_data = yf.download('^JKSE', start=start_date, end=end_date)
-    if benchmark_data.empty:
-        st.error("No data available for the benchmark (^JKSE). Please check the symbol or your internet connection.")
-    else:
-        if 'Adj Close' in benchmark_data.columns:
-            benchmark_data = benchmark_data['Adj Close']
-        else:
-            benchmark_data = benchmark_data['Close']
-        benchmark_returns = np.log(benchmark_data / benchmark_data.shift(1)).dropna()
-except Exception as e:
-    st.error(f"Error fetching benchmark data: {e}")
-
 # Check if any data was fetched and handle the case if not
 if adj_close_df.empty:
     st.error("No data available for the selected tickers.")
@@ -221,28 +170,55 @@ else:
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
     portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)
 
-    # Additional Metrics
-    portfolio_beta = beta(portfolio_returns, benchmark_returns)
-    portfolio_treynor = treynor_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input, benchmark_returns)
-    portfolio_jensen_alpha = jensen_alpha(optimal_weights, log_returns, risk_free_rate_input, benchmark_returns)
-    portfolio_tracking_error = tracking_error(portfolio_returns, benchmark_returns)
-    portfolio_cvar = conditional_value_at_risk(portfolio_returns, portfolio_var)
-    portfolio_skewness = skewness(log_returns)
-    portfolio_kurtosis = kurtosis(log_returns)
-
     # Display Portfolio Metrics
     st.subheader('Portfolio Metrics')
     st.write(f"📊 **Portfolio Expected Return (Annualized)**: {portfolio_expected_return:.2f}%")
     st.write(f"📉 **Portfolio Risk (Standard Deviation)**: {portfolio_risk:.2f}%")
     st.write(f"📊 **Sharpe Ratio**: {sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}")
     st.write(f"📈 **Sortino Ratio**: {portfolio_sortino:.2f}")
-    st.write(f"📉 **Max Drawdown**: {max_dd:.2f}")
-    st.write(f"📊 **Value at Risk (VaR)**: {portfolio_var:.2f}")
-    st.write(f"📉 **Expected Shortfall**: {portfolio_es:.2f}")
-    st.write(f"📊 **Portfolio Beta**: {portfolio_beta:.2f}")
-    st.write(f"📉 **Treynor Ratio**: {portfolio_treynor:.2f}")
-    st.write(f"📊 **Jensen's Alpha**: {portfolio_jensen_alpha:.2f}")
-    st.write(f"📉 **Tracking Error**: {portfolio_tracking_error:.2f}")
-    st.write(f"📊 **Conditional VaR**: {portfolio_cvar:.2f}")
-    st.write(f"📉 **Skewness**: {portfolio_skewness:.2f}")
-    st.write(f"📊 **Kurtosis**: {portfolio_kurtosis:.2f}")
+    st.write(f"⚠️ **Maximum Drawdown**: {max_dd * 100:.2f}%")
+    st.write(f"📉 **Value-at-Risk (VaR) at 95% Confidence**: {portfolio_var * 100:.2f}%")
+    st.write(f"📉 **Expected Shortfall (ES) at 95% Confidence**: {portfolio_es * 100:.2f}%")
+
+    # Visualizations
+    st.subheader('Portfolio Performance and Allocation')
+
+    # Create 3 columns layout for horizontal stacking
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        # Cumulative Returns Graph
+        st.subheader('Portfolio Cumulative Returns')
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.plot(cumulative_returns, label='Optimized Portfolio', color="#4CAF50", linewidth=2)
+        ax.set_title('Portfolio Performance (Cumulative Returns)', fontsize=14, fontweight='bold')
+        ax.set_xlabel('Time (Days)', fontsize=12)
+        ax.set_ylabel('Cumulative Returns', fontsize=12)
+        ax.legend()
+        st.pyplot(fig)
+
+    with col2:
+        # Portfolio Weights Distribution Graph (Pie chart)
+        st.subheader('Portfolio Weights Distribution')
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
+        ax.set_title('Optimal Portfolio Weights', fontsize=14, fontweight='bold')
+        st.pyplot(fig)
+
+    with col3:
+        # Capital Allocation in IDR Graph (Bar chart)
+        st.subheader('Capital Allocation in IDR')
+        fig, ax = plt.subplots(figsize=(8, 6))
+        bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
+        ax.set_xlabel('Assets', fontsize=12)
+        ax.set_ylabel('Allocated Capital (Rp)', fontsize=12)
+        ax.set_title('Capital Allocation for Investment (in IDR)', fontsize=14, fontweight='bold')
+
+        # Annotate the bars with capital amounts
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2, height + 50000, f'Rp {height:,.2f}', 
+                     ha='center', va='bottom', fontsize=10, color='black')
+
+        st.pyplot(fig)
+        
