@@ -190,7 +190,6 @@ else:
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
     portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)    
 
-    # Display Portfolio Metrics in Rounded and Colorful Cards with Icons
     st.subheader('📊 Portfolio Metrics')
 
 # First row (2 columns)
@@ -271,8 +270,8 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-    # Visualizations
-    st.subheader('Portfolio Performance and Allocation')
+# This part should be outside of any function or nested block and have the correct indentation.
+st.subheader('Portfolio Performance and Allocation')
 
     # Create 3 columns layout for horizontal stacking
     col1, col2, col3 = st.columns(3)
