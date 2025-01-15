@@ -41,7 +41,10 @@ def expected_shortfall(returns, var):
 
 # Additional Metrics
 def beta(portfolio_returns, benchmark_returns):
-    # Align the portfolio returns with the benchmark returns based on dates
+    # Ensure both returns are pandas Series with aligned indices
+    portfolio_returns = pd.Series(portfolio_returns)
+    benchmark_returns = pd.Series(benchmark_returns)
+    
     common_dates = portfolio_returns.index.intersection(benchmark_returns.index)
     portfolio_returns_aligned = portfolio_returns[common_dates]
     benchmark_returns_aligned = benchmark_returns[common_dates]
