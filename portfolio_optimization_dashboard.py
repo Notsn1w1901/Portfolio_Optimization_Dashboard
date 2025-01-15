@@ -140,11 +140,22 @@ else:
 
     # Benchmark data (S&P 500 as default)
     benchmark_data = yf.download('^JKSE', start=start_date, end=end_date)
+
+    # Check if 'Adj Close' exists, otherwise use 'Close'
     if 'Adj Close' in benchmark_data.columns:
         benchmark_data = benchmark_data['Adj Close']
-    else:
+    elif 'Close' in benchmark_data.columns:
         benchmark_data = benchmark_data['Close']
-    benchmark_returns = np.log(benchmark_data / benchmark_data.shift(1)).dropna()
+    else:
+        st.warning("No 'Adj Close' or 'Close' data available for benchmark.")
+        benchmark_data = pd.Series()
+
+    # Ensure the benchmark data is not empty
+    if not benchmark_data.empty:
+        benchmark_returns = np.log(benchmark_data / benchmark_data.shift(1)).dropna()
+    else:
+        st.error("Benchmark data could not be fetched properly.")
+        benchmark_returns = pd.Series()
 
     # Covariance matrix for the log returns
     cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
@@ -247,31 +258,25 @@ else:
     with col2:
         # Portfolio Weights Distribution Graph (Pie chart)
         st.subheader('Portfolio Weights Distribution')
-        fig, ax = plt.subplots(figsize=(6, 6))
-        ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
-        ax.set_title('Optimal Portfolio Weights', fontsize=14, fontweight='bold')
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', colors=sns.color_palette("Set3", len(tickers)), startangle=90)
+        ax.set_title('Portfolio Weights Distribution', fontsize=14, fontweight='bold')
         st.pyplot(fig)
 
     with col3:
-        # Capital Allocation in IDR Graph (Bar chart)
-        st.subheader('Capital Allocation in IDR')
+        # Capital Allocation Graph (Bar chart)
+        st.subheader('Capital Allocation (IDR)')
         fig, ax = plt.subplots(figsize=(8, 6))
-        bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
+        ax.bar(tickers, capital_allocation_idr, color=sns.color_palette("Set2", len(tickers)))
+        ax.set_title('Capital Allocation per Asset (IDR)', fontsize=14, fontweight='bold')
         ax.set_xlabel('Assets', fontsize=12)
-        ax.set_ylabel('Allocated Capital (Rp)', fontsize=12)
-        ax.set_title('Capital Allocation for Investment (in IDR)', fontsize=14, fontweight='bold')
-
-        # Annotate the bars with capital amounts
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width() / 2, height + 50000, f'Rp {height:,.2f}', 
-                     ha='center', va='bottom', fontsize=10, color='black')
-
+        ax.set_ylabel('Capital Allocation (IDR)', fontsize=12)
         st.pyplot(fig)
 
-    # Correlation Matrix Heatmap
-    st.subheader('Correlation Matrix Heatmap')
-    correlation_matrix = log_returns.corr()
-    fig, ax = plt.subplots(figsize=(8, 6))
-    sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", ax=ax)
-    st.pyplot(fig)
+    # Additional Analysis and Insights (Optional)
+    st.subheader('Further Analysis')
+    st.write("""
+    You can experiment with different risk-free rates, asset combinations, and historical data lengths to see how they affect the 
+    portfolio's performance and risk profile. Additionally, try using other optimization methods or metrics (e.g., Sortino ratio, 
+    Treynor ratio, etc.) to refine the portfolio according to your risk preferences.
+    """)
