@@ -15,7 +15,7 @@ def expected_return(weights, log_returns):
     return np.sum(log_returns.mean() * weights) * 252  # Annualized expected return
 
 def sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
-    return (expected_return(weights, log_returns) - risk_free_rate) / standard_deviation(weights, cov_matrix)
+    return (expected_return(weights, log_returns, cov_matrix, risk_free_rate) - risk_free_rate) / standard_deviation(weights, cov_matrix)
 
 def neg_sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate):
     return -sharpe_ratio(weights, log_returns, cov_matrix, risk_free_rate)
@@ -131,14 +131,6 @@ else:
         'Weight': "{:.4f}",
         'Amount of Shares': "{:.0f}"  # Display as an integer
     }))
-
-    # Display the rundown of the amount of shares
-    st.subheader('Rundown of Amount of Shares')
-    st.write("Here is the detailed breakdown of the amount of shares for each asset:")
-
-    # Iterate through the DataFrame and display each asset with its shares
-    for index, row in portfolio_df.iterrows():
-        st.write(f"**{row['Asset']}**: {int(row['Amount of Shares'])} shares")
 
     # Calculate Portfolio Expected Return and Risk
     portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
