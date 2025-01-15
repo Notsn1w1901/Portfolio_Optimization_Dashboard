@@ -113,18 +113,42 @@ else:
     # Capital allocation for each asset in IDR
     capital_allocation_idr = optimal_weights * investment_amount_idr
 
-    # Display optimal weights and capital allocation
-    st.subheader('Optimal Portfolio Weights and Capital Allocation')
+    # Fetch today's adjusted close price for each asset
+    latest_prices = {}
+    for ticker in tickers:
+        try:
+            data = yf.download(ticker, start=end_date - timedelta(days=1), end=end_date)
+            if 'Adj Close' in data.columns:
+                latest_prices[ticker] = data['Adj Close'].iloc[-1]
+            elif 'Close' in data.columns:
+                latest_prices[ticker] = data['Close'].iloc[-1]
+            else:
+                st.warning(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
+                continue
+        except Exception as e:
+            st.error(f"Error fetching data for {ticker}: {e}")
+            continue
+
+    # Calculate Amount of Shares for each asset
+    amount_of_shares = [capital_allocation_idr[i] / latest_prices[ticker] for i, ticker in enumerate(tickers)]
+
+    # Display optimal weights, capital allocation, and amount of shares
+    st.subheader('Optimal Portfolio Weights, Capital Allocation, and Amount of Shares')
     portfolio_df = pd.DataFrame({
         'Asset': tickers,
         'Weight': optimal_weights,
-        'Allocated Capital (IDR)': capital_allocation_idr
+        'Allocated Capital (IDR)': capital_allocation_idr,
+        'Amount of Shares': amount_of_shares
     })
-    st.dataframe(portfolio_df.style.format({'Allocated Capital (IDR)': "Rp {:,.2f}", 'Weight': "{:.4f}"}))
+    st.dataframe(portfolio_df.style.format({
+        'Allocated Capital (IDR)': "Rp {:,.2f}",
+        'Weight': "{:.4f}",
+        'Amount of Shares': "{:.2f}"
+    }))
 
     # Calculate Portfolio Expected Return and Risk
-    portfolio_expected_return = expected_return(optimal_weights, log_returns)*100
-    portfolio_risk = standard_deviation(optimal_weights, cov_matrix)*100
+    portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
+    portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
 
     # Display Portfolio Expected Return and Risk
     st.subheader('Portfolio Metrics')
