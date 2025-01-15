@@ -192,7 +192,7 @@ else:
 
     st.subheader('📊 Portfolio Metrics')
 
-    # First row (2 columns, equal width)
+    # First row (2 columns, equal size)
     col1, col2 = st.columns(2)
     
     # Expected Return
@@ -215,7 +215,7 @@ else:
         </div>
         """, unsafe_allow_html=True)
     
-    # Second row (2 columns, equal width)
+    # Second row (2 columns, equal size)
     col3, col4 = st.columns(2)
     
     # Max Drawdown
@@ -238,8 +238,8 @@ else:
         </div>
         """, unsafe_allow_html=True)
     
-    # Additional Metrics (2 columns, equal width)
-    col5, col6 = st.columns(2)
+    # Third row (3 columns, equal size)
+    col5, col6, col7 = st.columns(3)
     
     # Sortino Ratio
     with col5:
@@ -261,15 +261,15 @@ else:
         </div>
         """, unsafe_allow_html=True)
     
-    # Another row for Expected Shortfall (ES) - single column
-    st.markdown(f"""
-    <div class="metric-card metric-other">
-        <div class="icon">💸</div>
-        <h3>Expected Shortfall (ES)</h3>
-        <p class="value">{portfolio_es * 100:.2f}%</p>
-    </div>
-    """, unsafe_allow_html=True)
-
+    # Expected Shortfall (ES)
+    with col7:
+        st.markdown(f"""
+        <div class="metric-card metric-other">
+            <div class="icon">💸</div>
+            <h3>Expected Shortfall (ES)</h3>
+            <p class="value">{portfolio_es * 100:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     # This part should be outside of any function or nested block and have the correct indentation.
     st.subheader('Portfolio Performance and Allocation')
