@@ -4,19 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from scipy.optimize import minimize
-import requests  # For getting the current exchange rate
 import streamlit as st
-
-# Function to get live exchange rate from IDR to USD
-def get_exchange_rate():
-    api_key = 'ad98bbfc46d9a98d99e9e201'  # Replace with your API key
-    url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/IDR"
-    response = requests.get(url)
-    data = response.json()
-    if response.status_code == 200:
-        return data['conversion_rates']['USD']
-    else:
-        raise Exception("Error fetching exchange rate")
 
 # Functions for portfolio statistics
 def standard_deviation(weights, cov_matrix):
@@ -50,7 +38,7 @@ st.markdown("""
     This dashboard allows you to optimize a portfolio of assets by allocating capital across multiple tickers based on historical price data. 
     You can enter asset tickers (e.g., stocks, cryptocurrencies), specify the investment amount in IDR (Indonesian Rupiah), and set the number of years 
     of historical data to be used for analysis. The dashboard will calculate the optimal portfolio weights using the Sharpe ratio optimization method, 
-    and display the expected return, risk (standard deviation), and capital allocation for each asset in both IDR and USD.
+    and display the expected return, risk (standard deviation), and capital allocation for each asset in IDR.
     
     The portfolio is optimized with the objective of maximizing the Sharpe ratio, which represents the best risk-adjusted return. 
     You will also be able to visualize the portfolio's performance, weight distribution, and capital allocation.
@@ -122,17 +110,8 @@ else:
     # Extract the optimal weights
     optimal_weights = optimized_results.x
 
-    # Get live exchange rate for IDR to USD
-    idr_to_usd = get_exchange_rate()
-
-    # Convert the investment amount in IDR to USD
-    investment_amount_usd = investment_amount_idr / idr_to_usd
-
-    # Convert capital allocation for each asset to USD
-    capital_allocation_usd = optimal_weights * investment_amount_usd
-
-    # Convert the capital allocation back to IDR for displaying
-    capital_allocation_idr = capital_allocation_usd * idr_to_usd
+    # Capital allocation for each asset in IDR
+    capital_allocation_idr = optimal_weights * investment_amount_idr
 
     # Display optimal weights and capital allocation
     st.subheader('Optimal Portfolio Weights and Capital Allocation')
