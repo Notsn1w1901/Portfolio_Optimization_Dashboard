@@ -115,10 +115,18 @@ else:
     capital_allocation_idr = optimal_weights * investment_amount_idr
 
     # Calculate the amount of shares for each asset, considering USD to IDR conversion for USD-denominated assets
-    amount_of_shares = [
-        np.floor((capital / usd_to_idr) / adj_close_df[ticker].iloc[-1] if '-USD' in ticker else capital / adj_close_df[ticker].iloc[-1])
-        for capital, ticker in zip(capital_allocation_idr, tickers)
-    ]
+    amount_of_shares = []
+    for capital, ticker in zip(capital_allocation_idr, tickers):
+        # For USD-denominated assets, convert the capital to USD and calculate the shares
+        if '-USD' in ticker:
+            shares = (capital / usd_to_idr) / adj_close_df[ticker].iloc[-1]
+            amount_of_shares.append(np.round(shares, 8))  # Round to 8 decimal places
+        else:
+            shares = capital / adj_close_df[ticker].iloc[-1]
+            # For assets with .JK, round down to the nearest 100
+            if '.JK' in ticker:
+                shares = np.floor(shares / 100) * 100
+            amount_of_shares.append(shares)
 
     # Create DataFrame for portfolio details
     portfolio_df = pd.DataFrame({
@@ -133,7 +141,7 @@ else:
     st.dataframe(portfolio_df.style.format({
         'Allocated Capital (IDR)': "Rp {:,.2f}",
         'Weight': "{:.4f}",
-        'Amount of Shares': "{:.0f}"  # Display as an integer
+        'Amount of Shares': "{:.8f}"  # Display amount of shares in 8 decimal places for USD assets
     }))
 
     # Calculate Portfolio Expected Return and Risk
