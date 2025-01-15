@@ -44,6 +44,9 @@ def beta(portfolio_returns, benchmark_returns):
     # Ensure both returns are pandas Series with aligned indices
     portfolio_returns = pd.Series(portfolio_returns)
     benchmark_returns = pd.Series(benchmark_returns)
+
+    if portfolio_returns.isnull().any() or benchmark_returns.isnull().any():
+        raise ValueError("Portfolio or benchmark returns contain missing values.")
     
     common_dates = portfolio_returns.index.intersection(benchmark_returns.index)
     portfolio_returns_aligned = portfolio_returns[common_dates]
@@ -233,30 +236,13 @@ else:
     st.write(f"📉 **Portfolio Risk (Standard Deviation)**: {portfolio_risk:.2f}%")
     st.write(f"📊 **Sharpe Ratio**: {sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}")
     st.write(f"📈 **Sortino Ratio**: {portfolio_sortino:.2f}")
-    st.write(f"⚠️ **Maximum Drawdown**: {max_dd * 100:.2f}%")
-    st.write(f"📉 **Value-at-Risk (VaR) at 95% Confidence**: {portfolio_var * 100:.2f}%")
-    st.write(f"📉 **Expected Shortfall (ES) at 95% Confidence**: {portfolio_es * 100:.2f}%")
-    st.write(f"📈 **Beta**: {portfolio_beta:.2f}")
-    st.write(f"📊 **Treynor Ratio**: {portfolio_treynor:.2f}")
-    st.write(f"📈 **Jensen's Alpha**: {portfolio_jensen_alpha:.2f}")
+    st.write(f"📉 **Max Drawdown**: {max_dd:.2f}")
+    st.write(f"📊 **Value at Risk (VaR)**: {portfolio_var:.2f}")
+    st.write(f"📉 **Expected Shortfall**: {portfolio_es:.2f}")
+    st.write(f"📊 **Portfolio Beta**: {portfolio_beta:.2f}")
+    st.write(f"📉 **Treynor Ratio**: {portfolio_treynor:.2f}")
+    st.write(f"📊 **Jensen's Alpha**: {portfolio_jensen_alpha:.2f}")
     st.write(f"📉 **Tracking Error**: {portfolio_tracking_error:.2f}")
-    st.write(f"📊 **Conditional Value-at-Risk (CVaR)**: {portfolio_cvar * 100:.2f}%")
+    st.write(f"📊 **Conditional VaR**: {portfolio_cvar:.2f}")
     st.write(f"📉 **Skewness**: {portfolio_skewness:.2f}")
-    st.write(f"📈 **Kurtosis**: {portfolio_kurtosis:.2f}")
-    
-    # Visualization of Portfolio Weights
-    st.subheader("Optimal Portfolio Weights (Pie Chart)")
-    fig, ax = plt.subplots(figsize=(8, 8))
-    ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=sns.color_palette("Set3", len(tickers)))
-    ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
-    st.pyplot(fig)
-
-    # Performance Plot
-    st.subheader('Portfolio Cumulative Returns')
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.plot(cumulative_returns, label='Portfolio', color='blue', linewidth=2)
-    ax.set_title('Portfolio Cumulative Returns', fontsize=14)
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Cumulative Return')
-    ax.legend()
-    st.pyplot(fig)
+    st.write(f"📊 **Kurtosis**: {portfolio_kurtosis:.2f}")
