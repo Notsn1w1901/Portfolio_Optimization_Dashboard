@@ -190,6 +190,30 @@ else:
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
     portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)    
 
+    # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
+    assets_data = []
+    
+    for i, ticker in enumerate(tickers):
+        weight = optimal_weights[i]
+        capital_allocation = capital_allocation_idr[i]
+        
+        # Calculate the number of shares
+        if '-USD' in ticker:  # For cryptocurrencies
+            share_price = adj_close_df[ticker].iloc[-1]
+            shares = capital_allocation / usd_price_idr / share_price
+        else:  # For stocks
+            share_price = adj_close_df[ticker].iloc[-1]
+            shares = np.floor(capital_allocation / share_price / 100) * 100  # Round down to nearest 100 shares
+        
+        assets_data.append([ticker, f"{weight * 100:.2f}%", f"Rp {capital_allocation:,.2f}", shares])
+    
+    # Convert the asset data to a pandas DataFrame
+    assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital (IDR)", "Shares"])
+    
+    # Display the table
+    st.subheader('📝 Asset Details')
+    st.dataframe(assets_df)
+
     st.subheader('📊 Portfolio Metrics')
 
     # First row (2 columns, equal size)
