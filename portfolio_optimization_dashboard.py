@@ -113,14 +113,10 @@ else:
     # Capital allocation for each asset in IDR
     capital_allocation_idr = optimal_weights * investment_amount_idr
 
-    # Calculate the amount of shares for each asset
-    latest_prices = adj_close_df.iloc[-1]
-    amount_of_shares = capital_allocation_idr / latest_prices
+    # Calculate the amount of shares for each asset (rounded down to the nearest whole number)
+    amount_of_shares = np.floor(capital_allocation_idr / adj_close_df.iloc[-1].values)
 
-    # Display optimal weights, capital allocation, and amount of shares
-    st.subheader('Optimal Portfolio Weights, Capital Allocation, and Amount of Shares')
-
-    # Convert the data to a more display-friendly format
+    # Create DataFrame for portfolio details
     portfolio_df = pd.DataFrame({
         'Asset': tickers,
         'Weight': optimal_weights,
@@ -128,13 +124,21 @@ else:
         'Amount of Shares': amount_of_shares
     })
 
-    # Format columns for display
-    portfolio_df['Weight'] = portfolio_df['Weight'].map("{:.4f}".format)
-    portfolio_df['Allocated Capital (IDR)'] = portfolio_df['Allocated Capital (IDR)'].map("Rp {:,.2f}".format)
-    portfolio_df['Amount of Shares'] = portfolio_df['Amount of Shares'].map("{:.2f}".format)
-
     # Display the DataFrame using Streamlit
-    st.dataframe(portfolio_df)
+    st.subheader('Optimal Portfolio Weights and Capital Allocation')
+    st.dataframe(portfolio_df.style.format({
+        'Allocated Capital (IDR)': "Rp {:,.2f}",
+        'Weight': "{:.4f}",
+        'Amount of Shares': "{:.0f}"  # Display as an integer
+    }))
+
+    # Display the rundown of the amount of shares
+    st.subheader('Rundown of Amount of Shares')
+    st.write("Here is the detailed breakdown of the amount of shares for each asset:")
+
+    # Iterate through the DataFrame and display each asset with its shares
+    for index, row in portfolio_df.iterrows():
+        st.write(f"**{row['Asset']}**: {int(row['Amount of Shares'])} shares")
 
     # Calculate Portfolio Expected Return and Risk
     portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
@@ -148,7 +152,7 @@ else:
     # Calculate portfolio returns and cumulative returns
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
     cumulative_returns = (1 + portfolio_returns).cumprod()
-
+    
     # Create 3 columns layout for horizontal stacking
     col1, col2, col3 = st.columns(3)
 
