@@ -27,12 +27,10 @@ def sortino_ratio(weights, log_returns, cov_matrix, risk_free_rate):
     return (expected_return(weights, log_returns) - risk_free_rate) / downside_deviation
 
 def max_drawdown(cumulative_returns):
-    # Ensure cumulative_returns is a Pandas Series
     cumulative_returns = pd.Series(cumulative_returns)
-    
-    peak = cumulative_returns.cummax()  # Calculate the running maximum of cumulative returns
-    drawdown = (cumulative_returns - peak) / peak  # Calculate drawdown
-    return drawdown.min()  # Return the maximum drawdown (most negative value)
+    peak = cumulative_returns.cummax()
+    drawdown = (cumulative_returns - peak) / peak
+    return drawdown.min()
 
 def value_at_risk(returns, confidence_level=0.95):
     return np.percentile(returns, (1 - confidence_level) * 100)
@@ -50,28 +48,37 @@ with open("styles.css") as f:
 # Inject the CSS into Streamlit
 st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
+# Custom CSS for rounded squares for metrics
+st.markdown("""
+<style>
+    .metric-card {
+        background-color: #f0f4f7;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    .metric-card h3 {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #333;
+    }
+    .metric-card .value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #4CAF50;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Title of the app
 st.title('📈 Portfolio Optimization Dashboard')
 
-# Short description of the dashboard functionality
-st.markdown("""
-    This dashboard allows you to optimize a portfolio of assets by allocating capital across multiple tickers based on historical price data. 
-    You can enter asset tickers (e.g., stocks, cryptocurrencies), specify the investment amount in IDR (Indonesian Rupiah), and set the number of years 
-    of historical data to be used for analysis. The dashboard will calculate the optimal portfolio weights using the Sharpe ratio optimization method, 
-    and display the expected return, risk (standard deviation), and capital allocation for each asset in IDR.
-    
-    The portfolio is optimized with the objective of maximizing the Sharpe ratio, which represents the best risk-adjusted return. 
-    You will also be able to visualize the portfolio's performance, weight distribution, and capital allocation.
-    
-    Sincerely,  
-    **Winston Honadi**
-""", unsafe_allow_html=True)
-
 # Sidebar Inputs for User Interactivity
-st.sidebar.image("Designer.png", use_container_width=True)  # Add logo to the sidebar
 st.sidebar.header("Portfolio Inputs")
 tickers_input = st.sidebar.text_input("Enter asset tickers (e.g., BBCA.JK, BTC-USD, TSLA)", "BBCA.JK, BTC-USD")
-risk_free_rate_input = st.sidebar.number_input("Risk-Free Rate (%)", value=6.0, step=0.1) / 100  # Convert percentage to decimal
+risk_free_rate_input = st.sidebar.number_input("Risk-Free Rate (%)", value=6.0, step=0.1) / 100
 investment_amount_idr = st.sidebar.number_input("Investment Amount (IDR)", value=10000000, step=100000)
 years_of_data = st.sidebar.number_input("Years of Data", min_value=1, max_value=20, value=5, step=1)
 max_weight = st.sidebar.number_input("Maximum weight per asset (%)", min_value=1, max_value=100, value=50) / 100
@@ -80,7 +87,7 @@ usd_price_idr = st.sidebar.number_input("Current USD Price (IDR)", value=15000, 
 
 # Define the time period for the data
 end_date = datetime.today()
-start_date = end_date - timedelta(days=years_of_data * 365)  # Use user input for years
+start_date = end_date - timedelta(days=years_of_data * 365)
 
 # Initialize adj_close_df as an empty DataFrame
 adj_close_df = pd.DataFrame()
@@ -88,11 +95,9 @@ adj_close_df = pd.DataFrame()
 # Fetch data for all tickers entered by the user
 tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
 for ticker in tickers:
-    if ticker:  # Proceed only if the ticker is non-empty
+    if ticker:
         try:
             data = yf.download(ticker, start=start_date, end=end_date)
-            
-            # Check if 'Adj Close' exists, otherwise use 'Close'
             if 'Adj Close' in data.columns:
                 adj_close_df[ticker] = data['Adj Close']
             elif 'Close' in data.columns:
@@ -104,61 +109,36 @@ for ticker in tickers:
             st.error(f"Error fetching data for {ticker}: {e}")
             continue
 
-# Ensure data was fetched successfully before proceeding
 if adj_close_df.empty:
     st.error("No data available for the selected tickers.")
 else:
-    # Calculate log returns
     log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()
+    cov_matrix = log_returns.cov() * 252  # Annualized covariance matrix
 
-    # Covariance matrix for the log returns
-    cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
-
-    # Portfolio optimization constraints
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
     for i in range(len(tickers)):
         constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: weights[i] - min_weight})
         constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: max_weight - weights[i]})
 
-    # Set bounds for the portfolio weights (between 0 and 1 for each asset)
     bounds = [(min_weight, max_weight)] * len(tickers)
 
-    # Optimize portfolio using the negative Sharpe ratio
     initial_weights = np.ones(len(tickers)) / len(tickers)
     optimized_results = minimize(neg_sharpe_ratio, initial_weights, args=(log_returns, cov_matrix, risk_free_rate_input),
                                  method='SLSQP', constraints=constraints, bounds=bounds)
 
-    # Extract the optimal weights
     optimal_weights = optimized_results.x
-
-    # Capital allocation for each asset in IDR
     capital_allocation_idr = optimal_weights * investment_amount_idr
 
-    # Calculate the amount of shares based on USD or local assets
+    # Capital allocation in IDR
     shares = []
     for i, ticker in enumerate(tickers):
         if '-USD' in ticker:
-            # For USD-based assets, divide by USD to IDR conversion rate
             shares.append(capital_allocation_idr[i] / usd_price_idr / adj_close_df[ticker].iloc[-1])
         else:
-            # For .JK assets, round down to nearest 100 shares
             shares.append(np.floor(capital_allocation_idr[i] / adj_close_df[ticker].iloc[-1] / 100) * 100)
 
-    # Display optimal weights, capital allocation, and amount of shares
-    st.subheader('Optimal Portfolio Weights, Capital Allocation, and Shares')
-    portfolio_df = pd.DataFrame({
-        'Asset': tickers,
-        'Weight': optimal_weights,
-        'Allocated Capital (IDR)': capital_allocation_idr,
-        'Amount of Shares': shares
-    })
-    st.dataframe(portfolio_df.style.format({'Allocated Capital (IDR)': "Rp {:,.2f}", 'Weight': "{:.4f}", 'Amount of Shares': "{:.8f}"}))
-
-    # Calculate Portfolio Expected Return and Risk
     portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
     portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
-
-    # Calculate Advanced Metrics
     cumulative_returns = pd.Series((1 + np.dot(log_returns.values, optimal_weights)).cumprod())
     max_dd = max_drawdown(cumulative_returns)
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
@@ -166,15 +146,62 @@ else:
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
     portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)
 
-    # Display Portfolio Metrics
+    # Display Metrics in Rounded Squares
     st.subheader('Portfolio Metrics')
-    st.write(f"📊 **Portfolio Expected Return (Annualized)**: {portfolio_expected_return:.2f}%")
-    st.write(f"📉 **Portfolio Risk (Standard Deviation)**: {portfolio_risk:.2f}%")
-    st.write(f"📊 **Sharpe Ratio**: {sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}")
-    st.write(f"📈 **Sortino Ratio**: {portfolio_sortino:.2f}")
-    st.write(f"⚠️ **Maximum Drawdown**: {max_dd * 100:.2f}%")
-    st.write(f"📉 **Value-at-Risk (VaR) at 95% Confidence**: {portfolio_var * 100:.2f}%")
-    st.write(f"📉 **Expected Shortfall (ES) at 95% Confidence**: {portfolio_es * 100:.2f}%")
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>Expected Return</h3>
+            <p class="value">{portfolio_expected_return:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>Risk (Std Dev)</h3>
+            <p class="value">{portfolio_risk:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>Max Drawdown</h3>
+            <p class="value">{max_dd * 100:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col4:
+        st.markdown(f"""
+        <div class="metric-card">
+            <h3>Sharpe Ratio</h3>
+            <p class="value">{sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="metric-card">
+        <h3>Sortino Ratio</h3>
+        <p class="value">{portfolio_sortino:.2f}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="metric-card">
+        <h3>Value at Risk (VaR)</h3>
+        <p class="value">{portfolio_var * 100:.2f}%</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown(f"""
+    <div class="metric-card">
+        <h3>Expected Shortfall (ES)</h3>
+        <p class="value">{portfolio_es * 100:.2f}%</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     # Visualizations
     st.subheader('Portfolio Performance and Allocation')
