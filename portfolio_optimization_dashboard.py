@@ -41,8 +41,16 @@ def expected_shortfall(returns, var):
 
 # Additional Metrics
 def beta(portfolio_returns, benchmark_returns):
-    covariance_matrix = np.cov(portfolio_returns, benchmark_returns)
-    return covariance_matrix[0, 1] / np.var(benchmark_returns)
+    # Align the portfolio returns with the benchmark returns based on dates
+    common_dates = portfolio_returns.index.intersection(benchmark_returns.index)
+    portfolio_returns_aligned = portfolio_returns[common_dates]
+    benchmark_returns_aligned = benchmark_returns[common_dates]
+    
+    # Calculate the covariance matrix between the portfolio returns and benchmark returns
+    covariance_matrix = np.cov(portfolio_returns_aligned, benchmark_returns_aligned)
+    
+    # Return the beta as the ratio of the covariance between the portfolio and the benchmark to the variance of the benchmark
+    return covariance_matrix[0, 1] / np.var(benchmark_returns_aligned)
 
 def treynor_ratio(weights, log_returns, cov_matrix, risk_free_rate, benchmark_returns):
     portfolio_return = expected_return(weights, log_returns)
@@ -140,22 +148,11 @@ else:
 
     # Benchmark data (S&P 500 as default)
     benchmark_data = yf.download('^JKSE', start=start_date, end=end_date)
-
-    # Check if 'Adj Close' exists, otherwise use 'Close'
     if 'Adj Close' in benchmark_data.columns:
         benchmark_data = benchmark_data['Adj Close']
-    elif 'Close' in benchmark_data.columns:
+    else:
         benchmark_data = benchmark_data['Close']
-    else:
-        st.warning("No 'Adj Close' or 'Close' data available for benchmark.")
-        benchmark_data = pd.Series()
-
-    # Ensure the benchmark data is not empty
-    if not benchmark_data.empty:
-        benchmark_returns = np.log(benchmark_data / benchmark_data.shift(1)).dropna()
-    else:
-        st.error("Benchmark data could not be fetched properly.")
-        benchmark_returns = pd.Series()
+    benchmark_returns = np.log(benchmark_data / benchmark_data.shift(1)).dropna()
 
     # Covariance matrix for the log returns
     cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
@@ -234,49 +231,23 @@ else:
     st.write(f"📊 **Treynor Ratio**: {portfolio_treynor:.2f}")
     st.write(f"📈 **Jensen's Alpha**: {portfolio_jensen_alpha:.2f}")
     st.write(f"📉 **Tracking Error**: {portfolio_tracking_error:.2f}")
-    st.write(f"📉 **Conditional Value-at-Risk (CVaR)**: {portfolio_cvar:.2f}")
-    st.write(f"📊 **Skewness**: {portfolio_skewness:.2f}")
-    st.write(f"📉 **Kurtosis**: {portfolio_kurtosis:.2f}")
+    st.write(f"📊 **Conditional Value-at-Risk (CVaR)**: {portfolio_cvar * 100:.2f}%")
+    st.write(f"📉 **Skewness**: {portfolio_skewness:.2f}")
+    st.write(f"📈 **Kurtosis**: {portfolio_kurtosis:.2f}")
+    
+    # Visualization of Portfolio Weights
+    st.subheader("Optimal Portfolio Weights (Pie Chart)")
+    fig, ax = plt.subplots(figsize=(8, 8))
+    ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=sns.color_palette("Set3", len(tickers)))
+    ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    st.pyplot(fig)
 
-    # Visualizations
-    st.subheader('Portfolio Performance and Allocation')
-
-    # Create 3 columns layout for horizontal stacking
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        # Cumulative Returns Graph
-        st.subheader('Portfolio Cumulative Returns')
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.plot(cumulative_returns, label='Optimized Portfolio', color="#4CAF50", linewidth=2)
-        ax.set_title('Portfolio Performance (Cumulative Returns)', fontsize=14, fontweight='bold')
-        ax.set_xlabel('Time (Days)', fontsize=12)
-        ax.set_ylabel('Cumulative Returns', fontsize=12)
-        ax.legend()
-        st.pyplot(fig)
-
-    with col2:
-        # Portfolio Weights Distribution Graph (Pie chart)
-        st.subheader('Portfolio Weights Distribution')
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', colors=sns.color_palette("Set3", len(tickers)), startangle=90)
-        ax.set_title('Portfolio Weights Distribution', fontsize=14, fontweight='bold')
-        st.pyplot(fig)
-
-    with col3:
-        # Capital Allocation Graph (Bar chart)
-        st.subheader('Capital Allocation (IDR)')
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.bar(tickers, capital_allocation_idr, color=sns.color_palette("Set2", len(tickers)))
-        ax.set_title('Capital Allocation per Asset (IDR)', fontsize=14, fontweight='bold')
-        ax.set_xlabel('Assets', fontsize=12)
-        ax.set_ylabel('Capital Allocation (IDR)', fontsize=12)
-        st.pyplot(fig)
-
-    # Additional Analysis and Insights (Optional)
-    st.subheader('Further Analysis')
-    st.write("""
-    You can experiment with different risk-free rates, asset combinations, and historical data lengths to see how they affect the 
-    portfolio's performance and risk profile. Additionally, try using other optimization methods or metrics (e.g., Sortino ratio, 
-    Treynor ratio, etc.) to refine the portfolio according to your risk preferences.
-    """)
+    # Performance Plot
+    st.subheader('Portfolio Cumulative Returns')
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(cumulative_returns, label='Portfolio', color='blue', linewidth=2)
+    ax.set_title('Portfolio Cumulative Returns', fontsize=14)
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Cumulative Return')
+    ax.legend()
+    st.pyplot(fig)
