@@ -171,6 +171,7 @@ else:
             <p class="value">{portfolio_expected_return:.2f}%</p>
         </div>
         """, unsafe_allow_html=True)
+    
     with col2:
         st.markdown(f"""
         <div class="metric-card">
@@ -178,6 +179,7 @@ else:
             <p class="value">{portfolio_risk:.2f}%</p>
         </div>
         """, unsafe_allow_html=True)
+    
     with col3:
         st.markdown(f"""
         <div class="metric-card">
@@ -185,6 +187,7 @@ else:
             <p class="value">{max_dd * 100:.2f}%</p>
         </div>
         """, unsafe_allow_html=True)
+    
     with col4:
     st.markdown(f"""
         <div class="metric-card">
@@ -192,6 +195,7 @@ else:
             <p class="value">{sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}</p>
         </div>
         """, unsafe_allow_html=True)
+   
     with col5:
         st.markdown(f"""
     <div class="metric-card">
@@ -199,6 +203,7 @@ else:
         <p class="value">{portfolio_sortino:.2f}</p>
     </div>
     """, unsafe_allow_html=True)
+    
     with col6:
     st.markdown(f"""
     <div class="metric-card">
