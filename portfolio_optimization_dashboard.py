@@ -113,38 +113,28 @@ else:
     # Capital allocation for each asset in IDR
     capital_allocation_idr = optimal_weights * investment_amount_idr
 
-    # Fetch today's adjusted close price for each asset
-    latest_prices = {}
-    for ticker in tickers:
-        try:
-            data = yf.download(ticker, start=end_date - timedelta(days=1), end=end_date)
-            if 'Adj Close' in data.columns:
-                latest_prices[ticker] = data['Adj Close'].iloc[-1]
-            elif 'Close' in data.columns:
-                latest_prices[ticker] = data['Close'].iloc[-1]
-            else:
-                st.warning(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
-                continue
-        except Exception as e:
-            st.error(f"Error fetching data for {ticker}: {e}")
-            continue
-
-    # Calculate Amount of Shares for each asset
-    amount_of_shares = [capital_allocation_idr[i] / latest_prices[ticker] for i, ticker in enumerate(tickers)]
+    # Calculate the amount of shares for each asset
+    latest_prices = adj_close_df.iloc[-1]
+    amount_of_shares = capital_allocation_idr / latest_prices
 
     # Display optimal weights, capital allocation, and amount of shares
     st.subheader('Optimal Portfolio Weights, Capital Allocation, and Amount of Shares')
+
+    # Convert the data to a more display-friendly format
     portfolio_df = pd.DataFrame({
         'Asset': tickers,
         'Weight': optimal_weights,
         'Allocated Capital (IDR)': capital_allocation_idr,
         'Amount of Shares': amount_of_shares
     })
-    st.dataframe(portfolio_df.style.format({
-        'Allocated Capital (IDR)': "Rp {:,.2f}",
-        'Weight': "{:.4f}",
-        'Amount of Shares': "{:.2f}"
-    }))
+
+    # Format columns for display
+    portfolio_df['Weight'] = portfolio_df['Weight'].map("{:.4f}".format)
+    portfolio_df['Allocated Capital (IDR)'] = portfolio_df['Allocated Capital (IDR)'].map("Rp {:,.2f}".format)
+    portfolio_df['Amount of Shares'] = portfolio_df['Amount of Shares'].map("{:.2f}".format)
+
+    # Display the DataFrame using Streamlit
+    st.dataframe(portfolio_df)
 
     # Calculate Portfolio Expected Return and Risk
     portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
@@ -158,7 +148,7 @@ else:
     # Calculate portfolio returns and cumulative returns
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
     cumulative_returns = (1 + portfolio_returns).cumprod()
-    
+
     # Create 3 columns layout for horizontal stacking
     col1, col2, col3 = st.columns(3)
 
