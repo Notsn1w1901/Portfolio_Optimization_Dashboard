@@ -139,7 +139,7 @@ else:
     log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()
 
     # Benchmark data (S&P 500 as default)
-    benchmark_data = yf.download('^GSPC', start=start_date, end=end_date)['Adj Close']
+    benchmark_data = yf.download('^JKSE', start=start_date, end=end_date)['Adj Close']
     benchmark_returns = np.log(benchmark_data / benchmark_data.shift(1)).dropna()
 
     # Covariance matrix for the log returns
