@@ -142,20 +142,26 @@ for ticker in tickers:
             st.error(f"Error fetching data for {ticker}: {e}")
             continue
 
+# Fetch benchmark data (e.g., ^JKSE for Indonesian stock index)
+try:
+    benchmark_data = yf.download('^JKSE', start=start_date, end=end_date)
+    if benchmark_data.empty:
+        st.error("No data available for the benchmark (^JKSE). Please check the symbol or your internet connection.")
+    else:
+        if 'Adj Close' in benchmark_data.columns:
+            benchmark_data = benchmark_data['Adj Close']
+        else:
+            benchmark_data = benchmark_data['Close']
+        benchmark_returns = np.log(benchmark_data / benchmark_data.shift(1)).dropna()
+except Exception as e:
+    st.error(f"Error fetching benchmark data: {e}")
+
 # Check if any data was fetched and handle the case if not
 if adj_close_df.empty:
     st.error("No data available for the selected tickers.")
 else:
     # Calculate log returns
     log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()
-
-    # Benchmark data (S&P 500 as default)
-    benchmark_data = yf.download('^JKSE', start=start_date, end=end_date)
-    if 'Adj Close' in benchmark_data.columns:
-        benchmark_data = benchmark_data['Adj Close']
-    else:
-        benchmark_data = benchmark_data['Close']
-    benchmark_returns = np.log(benchmark_data / benchmark_data.shift(1)).dropna()
 
     # Covariance matrix for the log returns
     cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
