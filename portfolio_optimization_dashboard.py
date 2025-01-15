@@ -164,6 +164,9 @@ else:
     st.subheader('Portfolio Metrics')
     col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
 
+    st.subheader('Portfolio Metrics')
+    col1, col2, col3, col4 = st.columns(4)
+
     with col1:
         st.markdown(f"""
         <div class="metric-card">
@@ -171,7 +174,7 @@ else:
             <p class="value">{portfolio_expected_return:.2f}%</p>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col2:
         st.markdown(f"""
         <div class="metric-card">
@@ -179,7 +182,7 @@ else:
             <p class="value">{portfolio_risk:.2f}%</p>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col3:
         st.markdown(f"""
         <div class="metric-card">
@@ -187,24 +190,22 @@ else:
             <p class="value">{max_dd * 100:.2f}%</p>
         </div>
         """, unsafe_allow_html=True)
-    
+
     with col4:
-    st.markdown(f"""
+        st.markdown(f"""
         <div class="metric-card">
             <h3>Sharpe Ratio</h3>
             <p class="value">{sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}</p>
         </div>
         """, unsafe_allow_html=True)
-   
-    with col5:
-        st.markdown(f"""
+
+    st.markdown(f"""
     <div class="metric-card">
         <h3>Sortino Ratio</h3>
         <p class="value">{portfolio_sortino:.2f}</p>
     </div>
     """, unsafe_allow_html=True)
-    
-    with col6:
+
     st.markdown(f"""
     <div class="metric-card">
         <h3>Value at Risk (VaR)</h3>
@@ -212,8 +213,7 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    with col7:
-        st.markdown(f"""
+    st.markdown(f"""
     <div class="metric-card">
         <h3>Expected Shortfall (ES)</h3>
         <p class="value">{portfolio_es * 100:.2f}%</p>
