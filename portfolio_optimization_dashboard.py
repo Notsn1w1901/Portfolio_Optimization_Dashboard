@@ -193,49 +193,57 @@ else:
     # Display Portfolio Metrics in Rounded and Colorful Cards with Icons
     st.subheader('📊 Portfolio Metrics')
 
-    col1, col2, col3, col4 = st.columns(4)
+# First row (2 columns)
+col1, col2 = st.columns(2)
 
-    # Expected Return
-    with col1:
-        st.markdown(f"""
-        <div class="metric-card metric-return">
-            <div class="icon">📈</div>
-            <h3>Expected Return</h3>
-            <p class="value">{portfolio_expected_return:.2f}%</p>
-        </div>
-        """, unsafe_allow_html=True)
+# Expected Return
+with col1:
+    st.markdown(f"""
+    <div class="metric-card metric-return">
+        <div class="icon">📈</div>
+        <h3>Expected Return</h3>
+        <p class="value">{portfolio_expected_return:.2f}%</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Risk (Standard Deviation)
-    with col2:
-        st.markdown(f"""
-        <div class="metric-card metric-risk">
-            <div class="icon">⚖️</div>
-            <h3>Risk (Std Dev)</h3>
-            <p class="value">{portfolio_risk:.2f}%</p>
-        </div>
-        """, unsafe_allow_html=True)
+# Risk (Standard Deviation)
+with col2:
+    st.markdown(f"""
+    <div class="metric-card metric-risk">
+        <div class="icon">⚖️</div>
+        <h3>Risk (Std Dev)</h3>
+        <p class="value">{portfolio_risk:.2f}%</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Max Drawdown
-    with col3:
-        st.markdown(f"""
-        <div class="metric-card metric-drawdown">
-            <div class="icon">⛔</div>
-            <h3>Max Drawdown</h3>
-            <p class="value">{max_dd * 100:.2f}%</p>
-        </div>
-        """, unsafe_allow_html=True)
+# Second row (2 columns)
+col3, col4 = st.columns(2)
 
-    # Sharpe Ratio
-    with col4:
-        st.markdown(f"""
-        <div class="metric-card metric-sharpe">
-            <div class="icon">📊</div>
-            <h3>Sharpe Ratio</h3>
-            <p class="value">{sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}</p>
-        </div>
-        """, unsafe_allow_html=True)
+# Max Drawdown
+with col3:
+    st.markdown(f"""
+    <div class="metric-card metric-drawdown">
+        <div class="icon">⛔</div>
+        <h3>Max Drawdown</h3>
+        <p class="value">{max_dd * 100:.2f}%</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Additional Metrics: Sortino Ratio, VaR, Expected Shortfall
+# Sharpe Ratio
+with col4:
+    st.markdown(f"""
+    <div class="metric-card metric-sharpe">
+        <div class="icon">📊</div>
+        <h3>Sharpe Ratio</h3>
+        <p class="value">{sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Additional Metrics (in a second row as well)
+col5, col6 = st.columns(2)
+
+# Sortino Ratio
+with col5:
     st.markdown(f"""
     <div class="metric-card metric-other">
         <div class="icon">⚡</div>
@@ -244,6 +252,8 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
+# Value at Risk (VaR)
+with col6:
     st.markdown(f"""
     <div class="metric-card metric-other">
         <div class="icon">💥</div>
@@ -252,13 +262,14 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown(f"""
-    <div class="metric-card metric-other">
-        <div class="icon">💸</div>
-        <h3>Expected Shortfall (ES)</h3>
-        <p class="value">{portfolio_es * 100:.2f}%</p>
-    </div>
-    """, unsafe_allow_html=True)
+# Another row for Expected Shortfall (ES)
+st.markdown(f"""
+<div class="metric-card metric-other">
+    <div class="icon">💸</div>
+    <h3>Expected Shortfall (ES)</h3>
+    <p class="value">{portfolio_es * 100:.2f}%</p>
+</div>
+""", unsafe_allow_html=True)
 
     # Visualizations
     st.subheader('Portfolio Performance and Allocation')
