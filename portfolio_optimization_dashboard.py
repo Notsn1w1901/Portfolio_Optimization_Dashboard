@@ -120,6 +120,7 @@ st.markdown("""
 
 # Sidebar Inputs for User Interactivity
 st.sidebar.header("Portfolio Inputs")
+st.sidebar.image("Designer.png", use_column_width=True)
 tickers_input = st.sidebar.text_input("Enter asset tickers (e.g., BBCA.JK, BTC-USD, TSLA)", "BBCA.JK, BTC-USD")
 risk_free_rate_input = st.sidebar.number_input("Risk-Free Rate (%)", value=6.0, step=0.1) / 100
 investment_amount_idr = st.sidebar.number_input("Investment Amount (IDR)", value=10000000, step=100000)
