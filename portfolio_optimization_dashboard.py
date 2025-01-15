@@ -41,13 +41,6 @@ def expected_shortfall(returns, var):
 # Streamlit app structure
 st.set_page_config(page_title="Portfolio Optimization", layout="wide", initial_sidebar_state="expanded")
 
-# Load custom CSS from external file (styles.css)
-with open("styles.css") as f:
-    css = f.read()
-
-# Inject the CSS into Streamlit
-st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
-
 # Custom CSS for rounded squares for metrics
 st.markdown("""
 <style>
@@ -196,75 +189,75 @@ else:
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
     portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)    
 
-# Display Portfolio Metrics in Rounded and Colorful Cards with Icons
-st.subheader('📊 Portfolio Metrics')
+    # Display Portfolio Metrics in Rounded and Colorful Cards with Icons
+    st.subheader('📊 Portfolio Metrics')
 
-col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4 = st.columns(4)
 
-# Expected Return
-with col1:
+    # Expected Return
+    with col1:
+        st.markdown(f"""
+        <div class="metric-card metric-return">
+            <div class="icon">📈</div>
+            <h3>Expected Return</h3>
+            <p class="value">{portfolio_expected_return:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Risk (Standard Deviation)
+    with col2:
+        st.markdown(f"""
+        <div class="metric-card metric-risk">
+            <div class="icon">⚖️</div>
+            <h3>Risk (Std Dev)</h3>
+            <p class="value">{portfolio_risk:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Max Drawdown
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card metric-drawdown">
+            <div class="icon">⛔</div>
+            <h3>Max Drawdown</h3>
+            <p class="value">{max_dd * 100:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Sharpe Ratio
+    with col4:
+        st.markdown(f"""
+        <div class="metric-card metric-sharpe">
+            <div class="icon">📊</div>
+            <h3>Sharpe Ratio</h3>
+            <p class="value">{sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # Additional Metrics: Sortino Ratio, VaR, Expected Shortfall
     st.markdown(f"""
-    <div class="metric-card metric-return">
-        <div class="icon">📈</div>
-        <h3>Expected Return</h3>
-        <p class="value">{portfolio_expected_return:.2f}%</p>
+    <div class="metric-card metric-other">
+        <div class="icon">⚡</div>
+        <h3>Sortino Ratio</h3>
+        <p class="value">{portfolio_sortino:.2f}</p>
     </div>
     """, unsafe_allow_html=True)
 
-# Risk (Standard Deviation)
-with col2:
     st.markdown(f"""
-    <div class="metric-card metric-risk">
-        <div class="icon">⚖️</div>
-        <h3>Risk (Std Dev)</h3>
-        <p class="value">{portfolio_risk:.2f}%</p>
+    <div class="metric-card metric-other">
+        <div class="icon">💥</div>
+        <h3>Value at Risk (VaR)</h3>
+        <p class="value">{portfolio_var * 100:.2f}%</p>
     </div>
     """, unsafe_allow_html=True)
 
-# Max Drawdown
-with col3:
     st.markdown(f"""
-    <div class="metric-card metric-drawdown">
-        <div class="icon">⛔</div>
-        <h3>Max Drawdown</h3>
-        <p class="value">{max_dd * 100:.2f}%</p>
+    <div class="metric-card metric-other">
+        <div class="icon">💸</div>
+        <h3>Expected Shortfall (ES)</h3>
+        <p class="value">{portfolio_es * 100:.2f}%</p>
     </div>
     """, unsafe_allow_html=True)
-
-# Sharpe Ratio
-with col4:
-    st.markdown(f"""
-    <div class="metric-card metric-sharpe">
-        <div class="icon">📊</div>
-        <h3>Sharpe Ratio</h3>
-        <p class="value">{sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Additional Metrics: Sortino Ratio, VaR, Expected Shortfall
-st.markdown(f"""
-<div class="metric-card metric-other">
-    <div class="icon">⚡</div>
-    <h3>Sortino Ratio</h3>
-    <p class="value">{portfolio_sortino:.2f}</p>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown(f"""
-<div class="metric-card metric-other">
-    <div class="icon">💥</div>
-    <h3>Value at Risk (VaR)</h3>
-    <p class="value">{portfolio_var * 100:.2f}%</p>
-</div>
-""", unsafe_allow_html=True)
-
-st.markdown(f"""
-<div class="metric-card metric-other">
-    <div class="icon">💸</div>
-    <h3>Expected Shortfall (ES)</h3>
-    <p class="value">{portfolio_es * 100:.2f}%</p>
-</div>
-""", unsafe_allow_html=True)
 
     # Visualizations
     st.subheader('Portfolio Performance and Allocation')
