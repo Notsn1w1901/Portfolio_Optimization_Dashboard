@@ -27,7 +27,9 @@ def sortino_ratio(weights, log_returns, cov_matrix, risk_free_rate):
     return (expected_return(weights, log_returns) - risk_free_rate) / downside_deviation
 
 def max_drawdown(cumulative_returns):
+    # Ensure cumulative_returns is a Pandas Series
     cumulative_returns = pd.Series(cumulative_returns)
+    
     peak = cumulative_returns.cummax()  # Calculate the running maximum of cumulative returns
     drawdown = (cumulative_returns - peak) / peak  # Calculate drawdown
     return drawdown.min()  # Return the maximum drawdown (most negative value)
@@ -142,52 +144,6 @@ else:
             # For .JK assets, round down to nearest 100 shares
             shares.append(np.floor(capital_allocation_idr[i] / adj_close_df[ticker].iloc[-1] / 100) * 100)
 
-    # Market data for beta calculation (S&P 500 and Jakarta Composite Index)
-    market_ticker_indo = "^JKSE"  # Indonesian stock market (Jakarta Composite Index)
-    market_data_indo = yf.download(market_ticker_indo, start=start_date, end=end_date)
-    
-    # Ensure we use the correct column for adjusted close or close
-    if 'Adj Close' in market_data_indo.columns:
-        market_log_returns_indo = np.log(market_data_indo['Adj Close'] / market_data_indo['Adj Close'].shift(1)).dropna()
-    elif 'Close' in market_data_indo.columns:
-        market_log_returns_indo = np.log(market_data_indo['Close'] / market_data_indo['Close'].shift(1)).dropna()
-
-    market_ticker_sp500 = "^GSPC"  # S&P 500 Index
-    market_data_sp500 = yf.download(market_ticker_sp500, start=start_date, end=end_date)
-    
-    # Ensure we use the correct column for adjusted close or close
-    if 'Adj Close' in market_data_sp500.columns:
-        market_log_returns_sp500 = np.log(market_data_sp500['Adj Close'] / market_data_sp500['Adj Close'].shift(1)).dropna()
-    elif 'Close' in market_data_sp500.columns:
-        market_log_returns_sp500 = np.log(market_data_sp500['Close'] / market_data_sp500['Close'].shift(1)).dropna()
-
-    # Function to calculate beta for each asset relative to a market
-    def calculate_beta(asset_returns, market_returns):
-        # Stack the returns together to form a 2D array for covariance calculation
-        stacked_returns = np.vstack((asset_returns, market_returns))
-        cov_matrix = np.cov(stacked_returns)  # Compute covariance matrix
-        beta = cov_matrix[0, 1] / cov_matrix[1, 1]  # Beta is the ratio of the covariance
-        return beta
-
-    # Calculate betas for all assets relative to both markets
-    asset_betas_indo = []
-    asset_betas_sp500 = []
-
-    for ticker in tickers:
-        asset_log_returns = log_returns[ticker]
-        
-        # Beta with respect to the Indonesian market
-        beta_indo = calculate_beta(asset_log_returns, market_log_returns_indo)
-        asset_betas_indo.append(beta_indo)
-        
-        # Beta with respect to the S&P 500 market
-        beta_sp500 = calculate_beta(asset_log_returns, market_log_returns_sp500)
-        asset_betas_sp500.append(beta_sp500)
-
-    # Calculate the portfolio's beta with respect to both markets
-    portfolio_beta_indo = np.dot(optimal_weights, asset_betas_indo)
-    portfolio_beta_sp500 = np.dot(optimal_weights, asset_betas_sp500)
-
     # Display optimal weights, capital allocation, and amount of shares
     st.subheader('Optimal Portfolio Weights, Capital Allocation, and Shares')
     portfolio_df = pd.DataFrame({
@@ -202,19 +158,18 @@ else:
     portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
     portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
 
-    # Calculate Sortino Ratio, Max Drawdown, and VaR
-    portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)
-    cumulative_returns = (1 + log_returns).cumprod() - 1
+    # Calculate Advanced Metrics
+    cumulative_returns = pd.Series((1 + np.dot(log_returns.values, optimal_weights)).cumprod())
     max_dd = max_drawdown(cumulative_returns)
-    portfolio_var = value_at_risk(log_returns, confidence_level=0.95)
-    portfolio_es = expected_shortfall(log_returns, portfolio_var)
+    portfolio_returns = np.dot(log_returns.values, optimal_weights)
+    portfolio_var = value_at_risk(portfolio_returns)
+    portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
+    portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)
 
     # Display Portfolio Metrics
     st.subheader('Portfolio Metrics')
     st.write(f"📊 **Portfolio Expected Return (Annualized)**: {portfolio_expected_return:.2f}%")
     st.write(f"📉 **Portfolio Risk (Standard Deviation)**: {portfolio_risk:.2f}%")
-    st.write(f"📊 **Beta (vs Indonesian Market)**: {portfolio_beta_indo:.2f}")  # Beta with respect to Indonesia
-    st.write(f"📊 **Beta (vs S&P 500)**: {portfolio_beta_sp500:.2f}")  # Beta with respect to S&P 500
     st.write(f"📊 **Sharpe Ratio**: {sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}")
     st.write(f"📈 **Sortino Ratio**: {portfolio_sortino:.2f}")
     st.write(f"⚠️ **Maximum Drawdown**: {max_dd * 100:.2f}%")
@@ -262,4 +217,3 @@ else:
                      ha='center', va='bottom', fontsize=10, color='black')
 
         st.pyplot(fig)
-        
