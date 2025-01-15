@@ -27,9 +27,7 @@ def sortino_ratio(weights, log_returns, cov_matrix, risk_free_rate):
     return (expected_return(weights, log_returns) - risk_free_rate) / downside_deviation
 
 def max_drawdown(cumulative_returns):
-    # Ensure cumulative_returns is a Pandas Series
     cumulative_returns = pd.Series(cumulative_returns)
-    
     peak = cumulative_returns.cummax()  # Calculate the running maximum of cumulative returns
     drawdown = (cumulative_returns - peak) / peak  # Calculate drawdown
     return drawdown.min()  # Return the maximum drawdown (most negative value)
@@ -147,11 +145,21 @@ else:
     # Market data for beta calculation (S&P 500 and Jakarta Composite Index)
     market_ticker_indo = "^JKSE"  # Indonesian stock market (Jakarta Composite Index)
     market_data_indo = yf.download(market_ticker_indo, start=start_date, end=end_date)
-    market_log_returns_indo = np.log(market_data_indo['Adj Close'] / market_data_indo['Adj Close'].shift(1)).dropna()
+    
+    # Ensure we use the correct column for adjusted close or close
+    if 'Adj Close' in market_data_indo.columns:
+        market_log_returns_indo = np.log(market_data_indo['Adj Close'] / market_data_indo['Adj Close'].shift(1)).dropna()
+    elif 'Close' in market_data_indo.columns:
+        market_log_returns_indo = np.log(market_data_indo['Close'] / market_data_indo['Close'].shift(1)).dropna()
 
     market_ticker_sp500 = "^GSPC"  # S&P 500 Index
     market_data_sp500 = yf.download(market_ticker_sp500, start=start_date, end=end_date)
-    market_log_returns_sp500 = np.log(market_data_sp500['Adj Close'] / market_data_sp500['Adj Close'].shift(1)).dropna()
+    
+    # Ensure we use the correct column for adjusted close or close
+    if 'Adj Close' in market_data_sp500.columns:
+        market_log_returns_sp500 = np.log(market_data_sp500['Adj Close'] / market_data_sp500['Adj Close'].shift(1)).dropna()
+    elif 'Close' in market_data_sp500.columns:
+        market_log_returns_sp500 = np.log(market_data_sp500['Close'] / market_data_sp500['Close'].shift(1)).dropna()
 
     # Function to calculate beta for each asset relative to a market
     def calculate_beta(asset_returns, market_returns):
