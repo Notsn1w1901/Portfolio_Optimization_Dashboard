@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from scipy.optimize import minimize
 import streamlit as st
+import seaborn as sns
 
 # Functions for portfolio statistics
 def standard_deviation(weights, cov_matrix):
@@ -27,9 +28,7 @@ def sortino_ratio(weights, log_returns, cov_matrix, risk_free_rate):
     return (expected_return(weights, log_returns) - risk_free_rate) / downside_deviation
 
 def max_drawdown(cumulative_returns):
-    # Ensure cumulative_returns is a Pandas Series
     cumulative_returns = pd.Series(cumulative_returns)
-    
     peak = cumulative_returns.cummax()  # Calculate the running maximum of cumulative returns
     drawdown = (cumulative_returns - peak) / peak  # Calculate drawdown
     return drawdown.min()  # Return the maximum drawdown (most negative value)
@@ -39,6 +38,34 @@ def value_at_risk(returns, confidence_level=0.95):
 
 def expected_shortfall(returns, var):
     return returns[returns <= var].mean()
+
+# Additional Metrics
+def beta(portfolio_returns, benchmark_returns):
+    covariance_matrix = np.cov(portfolio_returns, benchmark_returns)
+    return covariance_matrix[0, 1] / np.var(benchmark_returns)
+
+def treynor_ratio(weights, log_returns, cov_matrix, risk_free_rate, benchmark_returns):
+    portfolio_return = expected_return(weights, log_returns)
+    beta_val = beta(np.dot(log_returns.values, weights), benchmark_returns)
+    return (portfolio_return - risk_free_rate) / beta_val
+
+def jensen_alpha(weights, log_returns, risk_free_rate, benchmark_returns):
+    portfolio_return = expected_return(weights, log_returns)
+    beta_val = beta(np.dot(log_returns.values, weights), benchmark_returns)
+    market_return = expected_return(np.ones(len(benchmark_returns)) / len(benchmark_returns), benchmark_returns)
+    return portfolio_return - (risk_free_rate + beta_val * (market_return - risk_free_rate))
+
+def tracking_error(portfolio_returns, benchmark_returns):
+    return np.std(portfolio_returns - benchmark_returns)
+
+def conditional_value_at_risk(returns, var):
+    return np.mean(returns[returns <= var])
+
+def skewness(returns):
+    return returns.skew()
+
+def kurtosis(returns):
+    return returns.kurtosis()
 
 # Streamlit app structure
 st.set_page_config(page_title="Portfolio Optimization", layout="wide", initial_sidebar_state="expanded")
@@ -111,6 +138,10 @@ else:
     # Calculate log returns
     log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()
 
+    # Benchmark data (S&P 500 as default)
+    benchmark_data = yf.download('^GSPC', start=start_date, end=end_date)['Adj Close']
+    benchmark_returns = np.log(benchmark_data / benchmark_data.shift(1)).dropna()
+
     # Covariance matrix for the log returns
     cov_matrix = log_returns.cov() * 252  # Annualize the covariance matrix
 
@@ -166,6 +197,15 @@ else:
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
     portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)
 
+    # Additional Metrics
+    portfolio_beta = beta(portfolio_returns, benchmark_returns)
+    portfolio_treynor = treynor_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input, benchmark_returns)
+    portfolio_jensen_alpha = jensen_alpha(optimal_weights, log_returns, risk_free_rate_input, benchmark_returns)
+    portfolio_tracking_error = tracking_error(portfolio_returns, benchmark_returns)
+    portfolio_cvar = conditional_value_at_risk(portfolio_returns, portfolio_var)
+    portfolio_skewness = skewness(log_returns)
+    portfolio_kurtosis = kurtosis(log_returns)
+
     # Display Portfolio Metrics
     st.subheader('Portfolio Metrics')
     st.write(f"📊 **Portfolio Expected Return (Annualized)**: {portfolio_expected_return:.2f}%")
@@ -175,6 +215,13 @@ else:
     st.write(f"⚠️ **Maximum Drawdown**: {max_dd * 100:.2f}%")
     st.write(f"📉 **Value-at-Risk (VaR) at 95% Confidence**: {portfolio_var * 100:.2f}%")
     st.write(f"📉 **Expected Shortfall (ES) at 95% Confidence**: {portfolio_es * 100:.2f}%")
+    st.write(f"📈 **Beta**: {portfolio_beta:.2f}")
+    st.write(f"📊 **Treynor Ratio**: {portfolio_treynor:.2f}")
+    st.write(f"📈 **Jensen's Alpha**: {portfolio_jensen_alpha:.2f}")
+    st.write(f"📉 **Tracking Error**: {portfolio_tracking_error:.2f}")
+    st.write(f"📉 **Conditional Value-at-Risk (CVaR)**: {portfolio_cvar:.2f}")
+    st.write(f"📊 **Skewness**: {portfolio_skewness:.2f}")
+    st.write(f"📉 **Kurtosis**: {portfolio_kurtosis:.2f}")
 
     # Visualizations
     st.subheader('Portfolio Performance and Allocation')
@@ -217,3 +264,10 @@ else:
                      ha='center', va='bottom', fontsize=10, color='black')
 
         st.pyplot(fig)
+
+    # Correlation Matrix Heatmap
+    st.subheader('Correlation Matrix Heatmap')
+    correlation_matrix = log_returns.corr()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", ax=ax)
+    st.pyplot(fig)
