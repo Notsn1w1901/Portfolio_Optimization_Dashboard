@@ -163,8 +163,10 @@ else:
 
     # Function to calculate beta for each asset relative to a market
     def calculate_beta(asset_returns, market_returns):
-        cov_matrix = np.cov(asset_returns, market_returns)
-        beta = cov_matrix[0, 1] / cov_matrix[1, 1]
+        # Stack the returns together to form a 2D array for covariance calculation
+        stacked_returns = np.vstack((asset_returns, market_returns))
+        cov_matrix = np.cov(stacked_returns)  # Compute covariance matrix
+        beta = cov_matrix[0, 1] / cov_matrix[1, 1]  # Beta is the ratio of the covariance
         return beta
 
     # Calculate betas for all assets relative to both markets
