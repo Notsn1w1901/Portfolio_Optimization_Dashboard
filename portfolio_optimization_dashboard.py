@@ -170,11 +170,11 @@ else:
     st.subheader('Portfolio Metrics')
     st.write(f"📊 **Portfolio Expected Return (Annualized)**: {portfolio_expected_return:.2f}%")
     st.write(f"📉 **Portfolio Risk (Standard Deviation)**: {portfolio_risk:.2f}%")
+    st.write(f"📊 **Sharpe Ratio**: {sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}")
     st.write(f"📈 **Sortino Ratio**: {portfolio_sortino:.2f}")
     st.write(f"⚠️ **Maximum Drawdown**: {max_dd * 100:.2f}%")
     st.write(f"📉 **Value-at-Risk (VaR) at 95% Confidence**: {portfolio_var * 100:.2f}%")
     st.write(f"📉 **Expected Shortfall (ES) at 95% Confidence**: {portfolio_es * 100:.2f}%")
-    st.write(f"📊 **Sharpe Ratio**: {sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}")
 
     # Visualizations
     st.subheader('Portfolio Performance and Allocation')
