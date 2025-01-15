@@ -51,23 +51,59 @@ st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 # Custom CSS for rounded squares for metrics
 st.markdown("""
 <style>
+    /* Metric Card Styles */
     .metric-card {
-        background-color: #f0f4f7;
+        background: linear-gradient(145deg, #6a8dff, #4CAF50);
         border-radius: 15px;
         padding: 20px;
         margin-bottom: 20px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         text-align: center;
+        transition: transform 0.2s ease-in-out;
     }
+    
+    .metric-card:hover {
+        transform: scale(1.05);
+    }
+
     .metric-card h3 {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #333;
-    }
-    .metric-card .value {
         font-size: 1.5rem;
         font-weight: bold;
-        color: #4CAF50;
+        color: white;
+        margin-bottom: 10px;
+    }
+
+    .metric-card .value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ffffff;
+    }
+
+    .metric-card .icon {
+        font-size: 2rem;
+        color: white;
+        margin-bottom: 10px;
+    }
+
+    /* Green for return, Red for risk */
+    .metric-return {
+        background: linear-gradient(145deg, #81C784, #388E3C);
+    }
+
+    .metric-risk {
+        background: linear-gradient(145deg, #FF7043, #D32F2F);
+    }
+
+    .metric-drawdown {
+        background: linear-gradient(145deg, #FFB74D, #F57C00);
+    }
+
+    .metric-sharpe {
+        background: linear-gradient(145deg, #64B5F6, #1976D2);
+    }
+
+    .metric-other {
+        background: linear-gradient(145deg, #80DEEA, #26C6DA);
     }
 </style>
 """, unsafe_allow_html=True)
@@ -158,70 +194,7 @@ else:
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
     portfolio_var = value_at_risk(portfolio_returns)
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
-    portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)
-
-# Streamlit app structure
-st.set_page_config(page_title="Portfolio Optimization", layout="wide", initial_sidebar_state="expanded")
-
-# Inject custom CSS for rounded squares and visual enhancements
-st.markdown("""
-<style>
-    /* Metric Card Styles */
-    .metric-card {
-        background: linear-gradient(145deg, #6a8dff, #4CAF50);
-        border-radius: 15px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        text-align: center;
-        transition: transform 0.2s ease-in-out;
-    }
-    
-    .metric-card:hover {
-        transform: scale(1.05);
-    }
-
-    .metric-card h3 {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: white;
-        margin-bottom: 10px;
-    }
-
-    .metric-card .value {
-        font-size: 2rem;
-        font-weight: bold;
-        color: #ffffff;
-    }
-
-    .metric-card .icon {
-        font-size: 2rem;
-        color: white;
-        margin-bottom: 10px;
-    }
-
-    /* Green for return, Red for risk */
-    .metric-return {
-        background: linear-gradient(145deg, #81C784, #388E3C);
-    }
-
-    .metric-risk {
-        background: linear-gradient(145deg, #FF7043, #D32F2F);
-    }
-
-    .metric-drawdown {
-        background: linear-gradient(145deg, #FFB74D, #F57C00);
-    }
-
-    .metric-sharpe {
-        background: linear-gradient(145deg, #64B5F6, #1976D2);
-    }
-
-    .metric-other {
-        background: linear-gradient(145deg, #80DEEA, #26C6DA);
-    }
-</style>
-""", unsafe_allow_html=True)    
+    portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)    
 
 # Display Portfolio Metrics in Rounded and Colorful Cards with Icons
 st.subheader('📊 Portfolio Metrics')
