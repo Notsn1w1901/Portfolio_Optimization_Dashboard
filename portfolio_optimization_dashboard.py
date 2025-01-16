@@ -213,17 +213,16 @@ else:
         capital_allocation = capital_allocation_idr[i]
         
         # Calculate the number of shares
+        share_price = adj_close_df[ticker].iloc[-1]
         if '-USD' in ticker:  # For cryptocurrencies
-            share_price = adj_close_df[ticker].iloc[-1]
             shares = capital_allocation / usd_price_idr / share_price
         else:  # For stocks
-            share_price = adj_close_df[ticker].iloc[-1]
             shares = np.floor(capital_allocation / share_price / 100) * 100  # Round down to nearest 100 shares
         
-        assets_data.append([ticker, f"{weight * 100:.2f}%", f"Rp {capital_allocation:,.2f}", shares])
+        assets_data.append([ticker, f"{weight * 100:.2f}%", f"Rp {capital_allocation:,.2f}", f"Rp {share_price:,.2f}", shares])
     
     # Convert the asset data to a pandas DataFrame
-    assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital (IDR)", "Shares"])
+    assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital (IDR)", "Price (IDR)", "Shares"])
     
     # Display the table
     st.subheader('📝 Asset Details')
@@ -263,7 +262,7 @@ else:
         <div class="metric-card metric-drawdown">
             <div class="icon">⛔</div>
             <h3>Max Drawdown</h3>
-            <p class="value">{max_dd * 100:.2f}%</p>
+            <p class="value">{max_dd:.2f}%</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -277,36 +276,26 @@ else:
         </div>
         """, unsafe_allow_html=True)
     
-    # Third row (3 columns, equal size)
-    col5, col6, col7 = st.columns(3)
+    # Additional metrics row
+    col5, col6 = st.columns(2)
     
-    # Sortino Ratio
+    # Value at Risk
     with col5:
         st.markdown(f"""
         <div class="metric-card metric-other">
-            <div class="icon">⚡</div>
-            <h3>Sortino Ratio</h3>
-            <p class="value">{portfolio_sortino:.2f}</p>
+            <div class="icon">⚠️</div>
+            <h3>Value at Risk (95%)</h3>
+            <p class="value">Rp {portfolio_var:,.2f}</p>
         </div>
         """, unsafe_allow_html=True)
     
-    # Value at Risk (VaR)
+    # Expected Shortfall
     with col6:
         st.markdown(f"""
         <div class="metric-card metric-other">
-            <div class="icon">💥</div>
-            <h3>Value at Risk (VaR)</h3>
-            <p class="value">{portfolio_var * 100:.2f}%</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Expected Shortfall (ES)
-    with col7:
-        st.markdown(f"""
-        <div class="metric-card metric-other">
-            <div class="icon">💸</div>
-            <h3>Expected Shortfall (ES)</h3>
-            <p class="value">{portfolio_es * 100:.2f}%</p>
+            <div class="icon">📉</div>
+            <h3>Expected Shortfall</h3>
+            <p class="value">Rp {portfolio_es:,.2f}</p>
         </div>
         """, unsafe_allow_html=True)
     
