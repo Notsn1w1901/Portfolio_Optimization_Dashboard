@@ -205,7 +205,7 @@ else:
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
     portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)    
 
-    # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
+     # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
     assets_data = []
     
     for i, ticker in enumerate(tickers):
@@ -215,7 +215,7 @@ else:
         # Calculate the number of shares
         if '-USD' in ticker:  # For cryptocurrencies
             share_price = adj_close_df[ticker].iloc[-1]
-            shares = capital_allocation / usd_price_idr / share_price
+            shares = capital_allocation / (usd_price_idr * share_price)
             shares = round(shares, 8)  # Ensure 8 decimal places
         else:  # For stocks
             share_price = adj_close_df[ticker].iloc[-1]
