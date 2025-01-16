@@ -150,7 +150,6 @@ start_date = end_date - timedelta(days=years_of_data * 365)
 
 # Initialize adj_close_df as an empty DataFrame
 adj_close_df = pd.DataFrame()
-close_df = pd.DataFrame()  # To store Close prices
 
 # Fetch data for all tickers entered by the user
 tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
@@ -158,22 +157,13 @@ for ticker in tickers:
     if ticker:
         try:
             data = yf.download(ticker, start=start_date, end=end_date)
-            # Use 'Adj Close' if available, otherwise use 'Close'
             if 'Adj Close' in data.columns:
                 adj_close_df[ticker] = data['Adj Close']
             elif 'Close' in data.columns:
-                adj_close_df[ticker] = data['Close']  # Use Close if Adj Close is missing
+                adj_close_df[ticker] = data['Close']
             else:
                 st.warning(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
                 continue
-            close_df[ticker] = data['Close']  # Store Close prices for shares
-
-            # Check for and handle NaN values
-            if adj_close_df[ticker].isnull().any():
-                st.warning(f"NaN values found in data for {ticker}. Filling NaNs with the previous value.")
-                adj_close_df[ticker].fillna(method='ffill', inplace=True)  # Forward fill to handle NaN
-                adj_close_df[ticker].fillna(method='bfill', inplace=True)  # Backward fill if necessary
-
         except Exception as e:
             st.error(f"Error fetching data for {ticker}: {e}")
             continue
@@ -198,13 +188,13 @@ else:
     optimal_weights = optimized_results.x
     capital_allocation_idr = optimal_weights * investment_amount_idr
 
-    # Capital allocation in IDR using Close prices for shares
+    # Capital allocation in IDR
     shares = []
     for i, ticker in enumerate(tickers):
         if '-USD' in ticker:
-            shares.append(capital_allocation_idr[i] / usd_price_idr / close_df[ticker].iloc[-1])
+            shares.append(capital_allocation_idr[i] / usd_price_idr / adj_close_df[ticker].iloc[-1])
         else:
-            shares.append(np.floor(capital_allocation_idr[i] / close_df[ticker].iloc[-1] / 100) * 100)
+            shares.append(np.floor(capital_allocation_idr[i] / adj_close_df[ticker].iloc[-1] / 100) * 100)
 
     portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
     portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
@@ -215,30 +205,25 @@ else:
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
     portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)    
 
-    # Asset data collection for cryptocurrency or USD-based assets
+    # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
     assets_data = []
     
     for i, ticker in enumerate(tickers):
         weight = optimal_weights[i]
         capital_allocation = capital_allocation_idr[i]
         
-        # Calculate the number of shares using Close price for shares calculation
-        share_price = close_df[ticker].iloc[-1]
-        
-        # For cryptocurrencies or assets with "-USD", adjust the price using the USD to IDR rate
-        if '-USD' in ticker:
-            share_price = share_price * usd_price_idr  # Convert the price to IDR by multiplying with the USD to IDR rate
-        
-        # For stocks (non-USD-based assets), share price remains the same
-        if '-USD' in ticker:  # For cryptocurrencies or USD-based assets
-            shares = capital_allocation / share_price  # Allocated capital divided by the price in IDR
+        # Calculate the number of shares
+        if '-USD' in ticker:  # For cryptocurrencies
+            share_price = adj_close_df[ticker].iloc[-1]
+            shares = capital_allocation / usd_price_idr / share_price
         else:  # For stocks
+            share_price = adj_close_df[ticker].iloc[-1]
             shares = np.floor(capital_allocation / share_price / 100) * 100  # Round down to nearest 100 shares
         
-        assets_data.append([ticker, f"{weight * 100:.2f}%", f"Rp {capital_allocation:,.2f}", f"Rp {share_price:,.2f}", shares])
+        assets_data.append([ticker, f"{weight * 100:.2f}%", f"Rp {capital_allocation:,.2f}", shares])
     
     # Convert the asset data to a pandas DataFrame
-    assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital (IDR)", "Price (IDR)", "Shares"])
+    assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital (IDR)", "Shares"])
     
     # Display the table
     st.subheader('📝 Asset Details')
@@ -269,19 +254,19 @@ else:
         </div>
         """, unsafe_allow_html=True)
     
-    # Second row (2 columns)
+    # Second row (2 columns, equal size)
     col3, col4 = st.columns(2)
     
     # Max Drawdown
     with col3:
         st.markdown(f"""
         <div class="metric-card metric-drawdown">
-            <div class="icon">🔻</div>
+            <div class="icon">⛔</div>
             <h3>Max Drawdown</h3>
             <p class="value">{max_dd * 100:.2f}%</p>
         </div>
         """, unsafe_allow_html=True)
-
+    
     # Sharpe Ratio
     with col4:
         st.markdown(f"""
@@ -291,8 +276,42 @@ else:
             <p class="value">{sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}</p>
         </div>
         """, unsafe_allow_html=True)
-
-    st.subheader('📊 Portfolio Performance')
+    
+    # Third row (3 columns, equal size)
+    col5, col6, col7 = st.columns(3)
+    
+    # Sortino Ratio
+    with col5:
+        st.markdown(f"""
+        <div class="metric-card metric-other">
+            <div class="icon">⚡</div>
+            <h3>Sortino Ratio</h3>
+            <p class="value">{portfolio_sortino:.2f}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Value at Risk (VaR)
+    with col6:
+        st.markdown(f"""
+        <div class="metric-card metric-other">
+            <div class="icon">💥</div>
+            <h3>Value at Risk (VaR)</h3>
+            <p class="value">{portfolio_var * 100:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Expected Shortfall (ES)
+    with col7:
+        st.markdown(f"""
+        <div class="metric-card metric-other">
+            <div class="icon">💸</div>
+            <h3>Expected Shortfall (ES)</h3>
+            <p class="value">{portfolio_es * 100:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # This part should be outside of any function or nested block and have the correct indentation.
+    st.subheader('Portfolio Performance and Allocation')
 
     # Create 3 columns layout for horizontal stacking
     col1, col2, col3 = st.columns(3)
