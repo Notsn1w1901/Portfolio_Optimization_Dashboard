@@ -189,12 +189,15 @@ else:
     capital_allocation_idr = optimal_weights * investment_amount_idr
 
     # Capital allocation in IDR
+    # Capital allocation in IDR
     shares = []
     for i, ticker in enumerate(tickers):
         if '-USD' in ticker:
-            shares.append(capital_allocation_idr[i] / usd_price_idr / adj_close_df[ticker].iloc[-1])
+            share_price = adj_close_df[ticker].iloc[-1]
+            shares.append(capital_allocation_idr[i] / usd_price_idr / share_price)
         else:
-            shares.append(np.floor(capital_allocation_idr[i] / adj_close_df[ticker].iloc[-1] / 100) * 100)
+            share_price = adj_close_df[ticker].iloc[-1]
+            shares.append(np.floor(capital_allocation_idr[i] / share_price / 100) * 100)
 
     portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
     portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
