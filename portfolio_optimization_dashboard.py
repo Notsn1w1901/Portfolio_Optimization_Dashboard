@@ -219,9 +219,14 @@ else:
                 # For other assets, use 'Adj Close' price
                 current_price = adj_close_df[ticker].iloc[-1]
             
-            current_prices[ticker] = current_price
+            # Ensure current_price is a valid float (not None or NaN)
+            if pd.isna(current_price):
+                current_prices[ticker] = None
+            else:
+                current_prices[ticker] = float(current_price)
         except Exception as e:
             st.warning(f"Error fetching current price for {ticker}: {e}")
+            current_prices[ticker] = None  # Set as None if there's an issue fetching the price
     
     # Populate the assets data
     assets_data = []
