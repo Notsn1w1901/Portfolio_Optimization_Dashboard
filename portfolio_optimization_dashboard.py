@@ -191,11 +191,20 @@ else:
     # Capital allocation in IDR
     shares = []
     for i, ticker in enumerate(tickers):
-        share_price = adj_close_df[ticker].iloc[-1]
-        if '-USD' in ticker:
-            shares.append(capital_allocation_idr[i] / (usd_price_idr * share_price))
-        else:
-            shares.append(np.floor(capital_allocation_idr[i] / share_price / 100) * 100)
+        try:
+            share_price = adj_close_df[ticker].iloc[-1]
+            st.write(f"Ticker: {ticker}, Share Price: {share_price}, Capital Allocation IDR: {capital_allocation_idr[i]}")
+            if '-USD' in ticker:
+                share_count = capital_allocation_idr[i] / (usd_price_idr * share_price)
+                st.write(f"Shares for {ticker}: {share_count}")
+                shares.append(share_count)
+            else:
+                share_count = np.floor(capital_allocation_idr[i] / share_price / 100) * 100
+                st.write(f"Shares for {ticker}: {share_count}")
+                shares.append(share_count)
+        except Exception as e:
+            st.error(f"Error calculating shares for {ticker}: {e}")
+            shares.append(None)
 
     portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
     portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
