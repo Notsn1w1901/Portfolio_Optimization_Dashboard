@@ -213,7 +213,7 @@ else:
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
     portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)    
 
-    # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
+    # Asset data collection for cryptocurrency or USD-based assets
     assets_data = []
     
     for i, ticker in enumerate(tickers):
@@ -225,10 +225,11 @@ else:
         
         # For cryptocurrencies or assets with "-USD", adjust the price using the USD to IDR rate
         if '-USD' in ticker:
-            share_price = share_price * usd_price_idr  # Multiply by the inputted USD to IDR rate
-    
-        if '-USD' in ticker:  # For cryptocurrencies
-            shares = capital_allocation / usd_price_idr / share_price
+            share_price = share_price * usd_price_idr  # Convert the price to IDR by multiplying with the USD to IDR rate
+        
+        # For stocks (non-USD-based assets), share price remains the same
+        if '-USD' in ticker:  # For cryptocurrencies or USD-based assets
+            shares = capital_allocation / share_price  # Allocated capital divided by the price in IDR
         else:  # For stocks
             shares = np.floor(capital_allocation / share_price / 100) * 100  # Round down to nearest 100 shares
         
