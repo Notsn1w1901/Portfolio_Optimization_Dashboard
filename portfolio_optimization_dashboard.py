@@ -307,14 +307,13 @@ else:
     with col6:
         st.markdown(f"""
         <div class="metric-card metric-other">
-            <div class="icon">📉</div>
-            <h3>Expected Shortfall</h3>
+            <div class="icon">💥</div>
+            <h3>Expected Shortfall (95%)</h3>
             <p class="value">Rp {portfolio_es:,.2f}</p>
         </div>
         """, unsafe_allow_html=True)
-    
-    # This part should be outside of any function or nested block and have the correct indentation.
-    st.subheader('Portfolio Performance and Allocation')
+
+    st.subheader('📊 Portfolio Performance')
 
     # Create 3 columns layout for horizontal stacking
     col1, col2, col3 = st.columns(3)
