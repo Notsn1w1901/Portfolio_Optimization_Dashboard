@@ -208,27 +208,28 @@ else:
     # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
     assets_data = []
     
-    # Fetch the current price of each asset (modified to use Close price for -USD assets)
+    # Fetch the current price of each asset
     current_prices = {}
     for ticker in tickers:
         try:
+            # For USD-based assets (e.g., BTC-USD), use the 'Close' price
             if '-USD' in ticker:
-                # For USD assets (cryptos, etc.), use 'Close' price
-                current_price = yf.download(ticker, start=start_date, end=end_date)['Close'].iloc[-1]
+                data = yf.download(ticker, start=start_date, end=end_date)
+                current_price = data['Close'].iloc[-1] if 'Close' in data.columns else None
             else:
-                # For other assets, use 'Adj Close' price
-                current_price = adj_close_df[ticker].iloc[-1]
+                # For regular stock tickers, use the 'Adj Close' price
+                current_price = adj_close_df[ticker].iloc[-1] if ticker in adj_close_df else None
             
-            # Ensure current_price is a valid float (not None or NaN)
-            if pd.isna(current_price):
-                current_prices[ticker] = None
-            else:
+            # Store the price only if it's valid
+            if current_price and not pd.isna(current_price):
                 current_prices[ticker] = float(current_price)
+            else:
+                current_prices[ticker] = None  # Assign None if price is missing
         except Exception as e:
             st.warning(f"Error fetching current price for {ticker}: {e}")
-            current_prices[ticker] = None  # Set as None if there's an issue fetching the price
+            current_prices[ticker] = None  # Set None if there's an issue fetching the price
     
-    # Populate the assets data
+    # Populate the assets data with the correct allocations
     assets_data = []
     for i, ticker in enumerate(tickers):
         weight = optimal_weights[i]
@@ -261,6 +262,7 @@ else:
     # Display the table
     st.subheader('📝 Asset Details')
     st.dataframe(assets_df)
+
 
     st.subheader('📊 Portfolio Metrics')
 
