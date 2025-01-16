@@ -208,26 +208,39 @@ else:
     # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
     assets_data = []
     
-    # Fetch the current price of each asset
+    # Fetch the current price of each asset with debug print statements
     current_prices = {}
     for ticker in tickers:
         try:
+            # Debugging: Print the ticker being processed
+            st.write(f"Processing ticker: {ticker}")
+            
             # For USD-based assets (e.g., BTC-USD), use the 'Close' price
             if '-USD' in ticker:
                 data = yf.download(ticker, start=start_date, end=end_date)
-                current_price = data['Close'].iloc[-1] if 'Close' in data.columns else None
+                if 'Close' in data.columns:
+                    current_price = data['Close'].iloc[-1]
+                    st.write(f"Found USD price for {ticker}: {current_price}")
+                else:
+                    st.warning(f"Missing 'Close' column for {ticker}.")
+                    current_price = None
             else:
                 # For regular stock tickers, use the 'Adj Close' price
                 current_price = adj_close_df[ticker].iloc[-1] if ticker in adj_close_df else None
+                st.write(f"Found stock price for {ticker}: {current_price}")
             
             # Store the price only if it's valid
             if current_price and not pd.isna(current_price):
                 current_prices[ticker] = float(current_price)
             else:
-                current_prices[ticker] = None  # Assign None if price is missing
+                current_prices[ticker] = None  # Set None if price is missing
+                st.warning(f"Price for {ticker} is missing or invalid.")
         except Exception as e:
-            st.warning(f"Error fetching current price for {ticker}: {e}")
+            st.error(f"Error fetching current price for {ticker}: {e}")
             current_prices[ticker] = None  # Set None if there's an issue fetching the price
+    
+    # Debug: Check the current_prices dictionary
+    st.write("Current Prices:", current_prices)
     
     # Populate the assets data with the correct allocations
     assets_data = []
@@ -262,7 +275,6 @@ else:
     # Display the table
     st.subheader('📝 Asset Details')
     st.dataframe(assets_df)
-
 
     st.subheader('📊 Portfolio Metrics')
 
