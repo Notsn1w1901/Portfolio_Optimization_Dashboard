@@ -158,6 +158,8 @@ for ticker in tickers:
     if ticker:
         try:
             data = yf.download(ticker, start=start_date, end=end_date)
+            print(f"Data for {ticker}:\n{data.head()}")
+            # Continue with processing as before...
             # Use 'Adj Close' for portfolio optimization and 'Close' for share calculation
             if 'Adj Close' in data.columns:
                 adj_close_df[ticker] = data['Adj Close']
