@@ -208,22 +208,44 @@ else:
     # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
     assets_data = []
     
+    # Fetch the current price of each asset
+    current_prices = {}
+    for ticker in tickers:
+        try:
+            current_price = adj_close_df[ticker].iloc[-1]  # Get the last adjusted close price
+            current_prices[ticker] = current_price
+        except Exception as e:
+            st.warning(f"Error fetching current price for {ticker}: {e}")
+    
+    # Populate the assets data
     for i, ticker in enumerate(tickers):
         weight = optimal_weights[i]
         capital_allocation = capital_allocation_idr[i]
+        current_price = current_prices.get(ticker, None)
         
-        # Calculate the number of shares
-        if '-USD' in ticker:  # For cryptocurrencies
-            share_price = adj_close_df[ticker].iloc[-1]
-            shares = capital_allocation / usd_price_idr / share_price
-        else:  # For stocks
-            share_price = adj_close_df[ticker].iloc[-1]
-            shares = np.floor(capital_allocation / share_price / 100) * 100  # Round down to nearest 100 shares
-        
-        assets_data.append([ticker, f"{weight * 100:.2f}%", f"Rp {capital_allocation:,.2f}", shares])
+        if current_price is not None:
+            # Determine currency type
+            if '-USD' in ticker:
+                currency = 'USD'
+                capital_allocation_formatted = capital_allocation / usd_price_idr  # Convert to USD
+                capital_allocation_str = f"${capital_allocation_formatted:,.2f}"
+            else:
+                currency = 'IDR'
+                capital_allocation_str = f"Rp {capital_allocation:,.2f}"
+            
+            # Calculate the number of shares
+            if '-USD' in ticker:  # For cryptocurrencies
+                shares_value = capital_allocation / usd_price_idr / current_price
+            else:  # For stocks
+                shares_value = np.floor(capital_allocation / current_price / 100) * 100  # Round down to nearest 100 shares
+            
+            assets_data.append([ticker, f"{weight * 100:.2f}%", capital_allocation_str, f"{current_price:,.2f} {currency}", shares_value])
+        else:
+            # If price not available, show "N/A"
+            assets_data.append([ticker, f"{weight * 100:.2f}%", "N/A", "N/A", "N/A"])
     
     # Convert the asset data to a pandas DataFrame
-    assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital (IDR)", "Shares"])
+    assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital", "Current Price", "Shares"])
     
     # Display the table
     st.subheader('📝 Asset Details')
