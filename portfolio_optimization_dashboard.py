@@ -208,68 +208,60 @@ else:
     # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
     assets_data = []
     
-    # Fetch the current price of each asset with debug print statements
+    # Fetch the current price of each asset
     current_prices = {}
     for ticker in tickers:
         try:
-            # Debugging: Print the ticker being processed
-            st.write(f"Processing ticker: {ticker}")
-            
             # For USD-based assets (e.g., BTC-USD), use the 'Close' price
             if '-USD' in ticker:
                 data = yf.download(ticker, start=start_date, end=end_date)
                 if 'Close' in data.columns:
                     current_price = data['Close'].iloc[-1]
-                    st.write(f"Found USD price for {ticker}: {current_price}")
+                    current_prices[ticker] = float(current_price)
                 else:
                     st.warning(f"Missing 'Close' column for {ticker}.")
-                    current_price = None
+                    current_prices[ticker] = None
             else:
                 # For regular stock tickers, use the 'Adj Close' price
-                current_price = adj_close_df[ticker].iloc[-1] if ticker in adj_close_df else None
-                st.write(f"Found stock price for {ticker}: {current_price}")
-            
-            # Store the price only if it's valid
-            if current_price and not pd.isna(current_price):
-                current_prices[ticker] = float(current_price)
-            else:
-                current_prices[ticker] = None  # Set None if price is missing
-                st.warning(f"Price for {ticker} is missing or invalid.")
+                if ticker in adj_close_df:
+                    current_price = adj_close_df[ticker].iloc[-1]  # Latest adjusted close price
+                    current_prices[ticker] = float(current_price)
+                else:
+                    st.warning(f"Price data for {ticker} is not available.")
+                    current_prices[ticker] = None
         except Exception as e:
             st.error(f"Error fetching current price for {ticker}: {e}")
-            current_prices[ticker] = None  # Set None if there's an issue fetching the price
+            current_prices[ticker] = None  # Set to None if there's an error fetching the price
     
-    # Debug: Check the current_prices dictionary
+    # Display the current prices (for debugging purposes)
     st.write("Current Prices:", current_prices)
     
-    # Populate the assets data with the correct allocations
+    # Populate the assets data for the table
     assets_data = []
     for i, ticker in enumerate(tickers):
         weight = optimal_weights[i]
         capital_allocation = capital_allocation_idr[i]
         current_price = current_prices.get(ticker, None)
-        
+    
         if current_price is not None:
-            # Determine currency type
-            if '-USD' in ticker:
-                currency = 'IDR'  # Treat USD assets as IDR for display purposes
-                capital_allocation_str = f"Rp {capital_allocation:,.2f}"  # Display in IDR
-            else:
-                currency = 'IDR'
-                capital_allocation_str = f"Rp {capital_allocation:,.2f}"
-            
-            # Calculate the number of shares
-            if '-USD' in ticker:  # For cryptocurrencies
-                shares_value = capital_allocation / usd_price_idr / current_price  # Convert to USD
+            # Format the allocated capital to IDR
+            capital_allocation_str = f"Rp {capital_allocation:,.2f}"  # Display in IDR
+    
+            # Determine the currency and calculate shares accordingly
+            if '-USD' in ticker:  # For USD assets (cryptos)
+                shares_value = capital_allocation / usd_price_idr / current_price  # Convert to USD first
+                currency = 'IDR'  # Treat as IDR for display purposes
             else:  # For stocks
-                shares_value = np.floor(capital_allocation / current_price / 100) * 100  # Round down to nearest 100 shares
-            
+                shares_value = np.floor(capital_allocation / current_price / 100) * 100  # Round to nearest 100 shares
+                currency = 'IDR'
+    
+            # Append the data to the list
             assets_data.append([ticker, f"{weight * 100:.2f}%", capital_allocation_str, f"{current_price:,.2f} {currency}", shares_value])
         else:
-            # If price not available, show "N/A"
+            # If current price is missing, show N/A
             assets_data.append([ticker, f"{weight * 100:.2f}%", "N/A", "N/A", "N/A"])
     
-    # Convert the asset data to a pandas DataFrame
+    # Convert the assets data into a DataFrame for display
     assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital", "Current Price", "Shares"])
     
     # Display the table
