@@ -157,6 +157,7 @@ for ticker in tickers:
     if ticker:
         try:
             data = yf.download(ticker, start=start_date, end=end_date)
+            # Use 'Adj Close' if available, otherwise use 'Close'
             if 'Adj Close' in data.columns:
                 adj_close_df[ticker] = data['Adj Close']
             elif 'Close' in data.columns:
@@ -164,6 +165,13 @@ for ticker in tickers:
             else:
                 st.warning(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
                 continue
+            
+            # Check for and handle NaN values
+            if adj_close_df[ticker].isnull().any():
+                st.warning(f"NaN values found in data for {ticker}. Filling NaNs with the previous value.")
+                adj_close_df[ticker].fillna(method='ffill', inplace=True)  # Forward fill to handle NaN
+                adj_close_df[ticker].fillna(method='bfill', inplace=True)  # Backward fill if necessary
+
         except Exception as e:
             st.error(f"Error fetching data for {ticker}: {e}")
             continue
