@@ -208,16 +208,23 @@ else:
     # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
     assets_data = []
     
-    # Fetch the current price of each asset
+    # Fetch the current price of each asset (modified to use Close price for -USD assets)
     current_prices = {}
     for ticker in tickers:
         try:
-            current_price = adj_close_df[ticker].iloc[-1]  # Get the last adjusted close price
+            if '-USD' in ticker:
+                # For USD assets (cryptos, etc.), use 'Close' price
+                current_price = yf.download(ticker, start=start_date, end=end_date)['Close'].iloc[-1]
+            else:
+                # For other assets, use 'Adj Close' price
+                current_price = adj_close_df[ticker].iloc[-1]
+            
             current_prices[ticker] = current_price
         except Exception as e:
             st.warning(f"Error fetching current price for {ticker}: {e}")
     
     # Populate the assets data
+    assets_data = []
     for i, ticker in enumerate(tickers):
         weight = optimal_weights[i]
         capital_allocation = capital_allocation_idr[i]
