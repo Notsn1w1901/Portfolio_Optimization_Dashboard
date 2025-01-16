@@ -233,9 +233,6 @@ else:
             st.error(f"Error fetching current price for {ticker}: {e}")
             current_prices[ticker] = None  # Set to None if there's an error fetching the price
     
-    # Display the current prices (for debugging purposes)
-    st.write("Current Prices:", current_prices)
-    
     # Populate the assets data for the table
     assets_data = []
     for i, ticker in enumerate(tickers):
