@@ -148,8 +148,9 @@ usd_price_idr = st.sidebar.number_input("Current USD Price (IDR)", value=15000, 
 end_date = datetime.today()
 start_date = end_date - timedelta(days=years_of_data * 365)
 
-# Initialize adj_close_df as an empty DataFrame
+# Fetch adjusted close and close prices
 adj_close_df = pd.DataFrame()
+close_df = pd.DataFrame()
 
 # Fetch data for all tickers entered by the user
 tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
@@ -157,30 +158,38 @@ for ticker in tickers:
     if ticker:
         try:
             data = yf.download(ticker, start=start_date, end=end_date)
-            # Use 'Adj Close' if available, otherwise use 'Close'
+            # Use 'Adj Close' for portfolio optimization and 'Close' for share calculation
             if 'Adj Close' in data.columns:
                 adj_close_df[ticker] = data['Adj Close']
-            elif 'Close' in data.columns:
-                adj_close_df[ticker] = data['Close']
             else:
-                st.warning(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
+                st.warning(f"Adjusted Close data is missing for {ticker}.")
                 continue
-            
-            # Check for and handle NaN values
+
+            if 'Close' in data.columns:
+                close_df[ticker] = data['Close']
+            else:
+                st.warning(f"Close data is missing for {ticker}.")
+                continue
+
+            # Handle NaN values by forward and backward filling
             if adj_close_df[ticker].isnull().any():
                 st.warning(f"NaN values found in data for {ticker}. Filling NaNs with the previous value.")
                 adj_close_df[ticker].fillna(method='ffill', inplace=True)  # Forward fill to handle NaN
                 adj_close_df[ticker].fillna(method='bfill', inplace=True)  # Backward fill if necessary
+            if close_df[ticker].isnull().any():
+                st.warning(f"NaN values found in data for {ticker}. Filling NaNs with the previous value.")
+                close_df[ticker].fillna(method='ffill', inplace=True)  # Forward fill to handle NaN
+                close_df[ticker].fillna(method='bfill', inplace=True)  # Backward fill if necessary
 
         except Exception as e:
             st.error(f"Error fetching data for {ticker}: {e}")
             continue
 
-if adj_close_df.empty:
+if adj_close_df.empty or close_df.empty:
     st.error("No data available for the selected tickers.")
 else:
-    log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()
-    cov_matrix = log_returns.cov() * 252  # Annualized covariance matrix
+    log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()  # Log returns for optimization
+    cov_matrix = log_returns.cov() * 252  # Annualized covariance matrix for optimization
 
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
     for i in range(len(tickers)):
@@ -196,13 +205,23 @@ else:
     optimal_weights = optimized_results.x
     capital_allocation_idr = optimal_weights * investment_amount_idr
 
-    # Capital allocation in IDR
+    # Calculate shares using close price (from the previous day)
     shares = []
     for i, ticker in enumerate(tickers):
+        capital_allocation = capital_allocation_idr[i]
+        
+        # Get the last 'Close' price for each asset
+        close_price = close_df[ticker].iloc[-1]  # Close price on the last available day
+        
+        # Adjust the share calculation for USD-based assets (cryptos or USD stocks)
         if '-USD' in ticker:
-            shares.append(capital_allocation_idr[i] / usd_price_idr / adj_close_df[ticker].iloc[-1])
-        else:
-            shares.append(np.floor(capital_allocation_idr[i] / adj_close_df[ticker].iloc[-1] / 100) * 100)
+            close_price = close_price * usd_price_idr  # Convert the price to IDR by multiplying with the USD to IDR rate
+        
+        # Calculate the number of shares to purchase based on the capital allocation
+        if '-USD' in ticker:  # For cryptocurrencies or USD-based assets
+            shares.append(capital_allocation / close_price)  # Allocated capital divided by the price in IDR
+        else:  # For stocks
+            shares.append(np.floor(capital_allocation / close_price / 100) * 100)  # Round down to nearest 100 shares
 
     portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
     portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
@@ -211,34 +230,26 @@ else:
     portfolio_returns = np.dot(log_returns.values, optimal_weights)
     portfolio_var = value_at_risk(portfolio_returns)
     portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
-    portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)    
+    portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)
 
-    # Asset data collection for cryptocurrency or USD-based assets
+    # Prepare Asset Data for display
     assets_data = []
-    
     for i, ticker in enumerate(tickers):
         weight = optimal_weights[i]
         capital_allocation = capital_allocation_idr[i]
         
-        # Calculate the number of shares
-        share_price = adj_close_df[ticker].iloc[-1]
+        # For cryptocurrencies or USD-based assets, use the adjusted price in IDR
+        share_price = close_df[ticker].iloc[-1]  # Using Close price for share calculation
         
-        # For cryptocurrencies or assets with "-USD", adjust the price using the USD to IDR rate
         if '-USD' in ticker:
             share_price = share_price * usd_price_idr  # Convert the price to IDR by multiplying with the USD to IDR rate
         
-        # For stocks (non-USD-based assets), share price remains the same
-        if '-USD' in ticker:  # For cryptocurrencies or USD-based assets
-            shares = capital_allocation / share_price  # Allocated capital divided by the price in IDR
-        else:  # For stocks
-            shares = np.floor(capital_allocation / share_price / 100) * 100  # Round down to nearest 100 shares
-        
-        assets_data.append([ticker, f"{weight * 100:.2f}%", f"Rp {capital_allocation:,.2f}", f"Rp {share_price:,.2f}", shares])
-    
+        assets_data.append([ticker, f"{weight * 100:.2f}%", f"Rp {capital_allocation:,.2f}", f"Rp {share_price:,.2f}", shares[i]])
+
     # Convert the asset data to a pandas DataFrame
     assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital (IDR)", "Price (IDR)", "Shares"])
-    
-    # Display the table
+
+    # Display the table with asset details
     st.subheader('📝 Asset Details')
     st.dataframe(assets_df)
 
