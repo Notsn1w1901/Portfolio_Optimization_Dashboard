@@ -222,6 +222,11 @@ else:
         
         # Calculate the number of shares
         share_price = adj_close_df[ticker].iloc[-1]
+        
+        # For cryptocurrencies or assets with "-USD", adjust the price using the USD to IDR rate
+        if '-USD' in ticker:
+            share_price = share_price * usd_price_idr  # Multiply by the inputted USD to IDR rate
+    
         if '-USD' in ticker:  # For cryptocurrencies
             shares = capital_allocation / usd_price_idr / share_price
         else:  # For stocks
