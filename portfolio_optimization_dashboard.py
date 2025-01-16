@@ -216,7 +216,7 @@ else:
         # Calculate the number of shares
         if '-USD' in ticker:  # For cryptocurrencies
             share_price = adj_close_df[ticker].iloc[-1]
-            shares = capital_allocation / usd_price_idr / share_price
+            shares = capital_allocation / (usd_price_idr * share_price)
         else:  # For stocks
             share_price = adj_close_df[ticker].iloc[-1]
             shares = np.floor(capital_allocation / share_price / 100) * 100  # Round down to nearest 100 shares
