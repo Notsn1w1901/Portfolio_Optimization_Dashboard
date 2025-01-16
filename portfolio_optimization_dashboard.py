@@ -247,7 +247,7 @@ else:
             # Determine the currency and calculate shares accordingly
             if '-USD' in ticker:  # For USD assets (cryptos)
                 shares_value = capital_allocation / usd_price_idr / current_price  # Convert to USD first
-                currency = 'IDR'  # Treat as IDR for display purposes
+                currency = 'USD'  # Treat as IDR for display purposes
             else:  # For stocks
                 shares_value = np.floor(capital_allocation / current_price / 100) * 100  # Round to nearest 100 shares
                 currency = 'IDR'
