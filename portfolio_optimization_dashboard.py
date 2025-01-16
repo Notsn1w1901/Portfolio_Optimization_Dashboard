@@ -226,16 +226,15 @@ else:
         if current_price is not None:
             # Determine currency type
             if '-USD' in ticker:
-                currency = 'USD'
-                capital_allocation_formatted = capital_allocation / usd_price_idr  # Convert to USD
-                capital_allocation_str = f"${capital_allocation_formatted:,.2f}"
+                currency = 'IDR'  # Treat USD assets as IDR for display purposes
+                capital_allocation_str = f"Rp {capital_allocation:,.2f}"  # Display in IDR
             else:
                 currency = 'IDR'
                 capital_allocation_str = f"Rp {capital_allocation:,.2f}"
             
             # Calculate the number of shares
             if '-USD' in ticker:  # For cryptocurrencies
-                shares_value = capital_allocation / usd_price_idr / current_price
+                shares_value = capital_allocation / usd_price_idr / current_price  # Convert to USD
             else:  # For stocks
                 shares_value = np.floor(capital_allocation / current_price / 100) * 100  # Round down to nearest 100 shares
             
