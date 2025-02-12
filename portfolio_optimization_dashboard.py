@@ -110,7 +110,7 @@ This dashboard empowers you to optimize investment portfolios.
 
 Key Features:
 
-    • Allocate capital across multiple assets (stocks, cryptocurrencies, etc.)
+    • Allocate capital across multiple assets (stocks, cryptocurrencies, mutual funds, etc.)
 
     • Define investment amount in IDR.
 
@@ -148,13 +148,19 @@ usd_price_idr = st.sidebar.number_input("Current USD Price (IDR)", value=15000, 
 end_date = datetime.today()
 start_date = end_date - timedelta(days=years_of_data * 365)
 
-# Initialize adj_close_df as an empty DataFrame
-adj_close_df = pd.DataFrame()
+# Add mutual funds to the list of tickers
+tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
+tickers.append("MUTUAL_FUND")  # Add mutual funds as a new ticker
 
 # Fetch data for all tickers entered by the user
-tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
+adj_close_df = pd.DataFrame()
 for ticker in tickers:
-    if ticker:
+    if ticker == "MUTUAL_FUND":
+        # For mutual funds, create a constant price series with a 5% annual return
+        dates = pd.date_range(start=start_date, end=end_date, freq='D')
+        price_series = [100 * (1 + 0.05/252)**i for i in range(len(dates))]  # Simulate 5% annual return
+        adj_close_df[ticker] = price_series
+    else:
         try:
             data = yf.download(ticker, start=start_date, end=end_date)
             if 'Adj Close' in data.columns:
@@ -168,100 +174,55 @@ for ticker in tickers:
             st.error(f"Error fetching data for {ticker}: {e}")
             continue
 
-if adj_close_df.empty:
-    st.error("No data available for the selected tickers.")
-else:
-    log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()
-    cov_matrix = log_returns.cov() * 252  # Annualized covariance matrix
+# Calculate log returns
+log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()
 
-    constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
-    for i in range(len(tickers)):
-        constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: weights[i] - min_weight})
-        constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: max_weight - weights[i]})
+# Update covariance matrix
+cov_matrix = log_returns.cov() * 252  # Annualized covariance matrix
+# Mutual funds have zero volatility and zero correlation with other assets
+cov_matrix.loc["MUTUAL_FUND", :] = 0
+cov_matrix.loc[:, "MUTUAL_FUND"] = 0
+cov_matrix.loc["MUTUAL_FUND", "MUTUAL_FUND"] = 0  # Zero volatility for mutual funds
 
-    bounds = [(min_weight, max_weight)] * len(tickers)
+# Constraints and bounds
+constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
+for i in range(len(tickers)):
+    constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: weights[i] - min_weight})
+    constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: max_weight - weights[i]})
 
-    initial_weights = np.ones(len(tickers)) / len(tickers)
-    optimized_results = minimize(neg_sharpe_ratio, initial_weights, args=(log_returns, cov_matrix, risk_free_rate_input),
-                                 method='SLSQP', constraints=constraints, bounds=bounds)
+bounds = [(min_weight, max_weight)] * len(tickers)
 
-    optimal_weights = optimized_results.x
-    capital_allocation_idr = optimal_weights * investment_amount_idr
+# Initial weights
+initial_weights = np.ones(len(tickers)) / len(tickers)
 
-    # Capital allocation in IDR
-    shares = []
-    for i, ticker in enumerate(tickers):
+# Optimize portfolio
+optimized_results = minimize(neg_sharpe_ratio, initial_weights, args=(log_returns, cov_matrix, risk_free_rate_input),
+                             method='SLSQP', constraints=constraints, bounds=bounds)
+
+optimal_weights = optimized_results.x
+
+# Capital allocation in IDR
+capital_allocation_idr = optimal_weights * investment_amount_idr
+
+# Display results
+st.subheader('📝 Asset Details (Including Mutual Funds)')
+assets_data = []
+for i, ticker in enumerate(tickers):
+    weight = optimal_weights[i]
+    capital_allocation = capital_allocation_idr[i]
+    if ticker == "MUTUAL_FUND":
+        shares_value = "N/A"  # Mutual funds don't have shares
+        current_price = "N/A"
+    else:
+        current_price = adj_close_df[ticker].iloc[-1]
         if '-USD' in ticker:
-            shares.append(capital_allocation_idr[i] / usd_price_idr / adj_close_df[ticker].iloc[-1])
+            shares_value = capital_allocation / usd_price_idr / current_price
         else:
-            shares.append(np.floor(capital_allocation_idr[i] / adj_close_df[ticker].iloc[-1] / 100) * 100)
+            shares_value = np.floor(capital_allocation / current_price / 100) * 100
+    assets_data.append([ticker, f"{weight * 100:.2f}%", f"Rp {capital_allocation:,.2f}", f"{current_price:,.2f}", shares_value])
 
-    portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
-    portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
-    cumulative_returns = pd.Series((1 + np.dot(log_returns.values, optimal_weights)).cumprod())
-    max_dd = max_drawdown(cumulative_returns)
-    portfolio_returns = np.dot(log_returns.values, optimal_weights)
-    portfolio_var = value_at_risk(portfolio_returns)
-    portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
-    portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)    
-
-    # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
-    assets_data = []
-    
-    # Fetch the current price of each asset
-    current_prices = {}
-    for ticker in tickers:
-        try:
-            # For USD-based assets (e.g., BTC-USD), use the 'Close' price
-            if '-USD' in ticker:
-                data = yf.download(ticker, start=start_date, end=end_date)
-                if 'Close' in data.columns:
-                    current_price = data['Close'].iloc[-1]
-                    current_prices[ticker] = float(current_price)
-                else:
-                    st.warning(f"Missing 'Close' column for {ticker}.")
-                    current_prices[ticker] = None
-            else:
-                # For regular stock tickers, use the 'Adj Close' price
-                if ticker in adj_close_df:
-                    current_price = adj_close_df[ticker].iloc[-1]  # Latest adjusted close price
-                    current_prices[ticker] = float(current_price)
-                else:
-                    st.warning(f"Price data for {ticker} is not available.")
-                    current_prices[ticker] = None
-        except Exception as e:
-            st.error(f"Error fetching current price for {ticker}: {e}")
-            current_prices[ticker] = None  # Set to None if there's an error fetching the price
-    
-    # Populate the assets data for the table
-    assets_data = []
-    for i, ticker in enumerate(tickers):
-        weight = optimal_weights[i]
-        capital_allocation = capital_allocation_idr[i]
-        current_price = current_prices.get(ticker, None)
-    
-        if current_price is not None:
-            # Format the allocated capital to IDR
-            capital_allocation_str = f"Rp {capital_allocation:,.2f}"  # Display in IDR
-    
-            # Determine the currency and calculate shares accordingly
-            if '-USD' in ticker:  # For USD assets (cryptos)
-                shares_value = capital_allocation / usd_price_idr / current_price  # Convert to USD first
-                currency = 'USD'  # Treat as USD for display purposes
-                shares_value_str = f"{shares_value:.8f}"  # Format shares value to 8 decimal places
-            else:  # For stocks
-                shares_value = np.floor(capital_allocation / current_price / 100) * 100  # Round to nearest 100 shares
-                currency = 'IDR'
-                shares_value_str = f"{shares_value:.0f}"  # Default to 0 decimal places for stocks
-            
-            # Append the data to the list with formatted shares_value
-            assets_data.append([ticker, f"{weight * 100:.2f}%", capital_allocation_str, f"{current_price:,.2f} {currency}", shares_value_str])
-        else:
-            # If current price is missing, show N/A
-            assets_data.append([ticker, f"{weight * 100:.2f}%", "N/A", "N/A", "N/A"])
-    
-    # Convert the assets data into a DataFrame for display
-    assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital", "Current Price", "Shares"])
+assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital", "Current Price", "Shares"])
+st.dataframe(assets_df)
     
     # Display the table
     st.subheader('📝 Asset Details')
