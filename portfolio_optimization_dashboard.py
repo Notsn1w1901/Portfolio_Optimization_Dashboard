@@ -406,7 +406,7 @@ else:
 
     with col3:
         # Capital Allocation in IDR Graph (Bar chart)
-        st.subheader('Capital Allocation in IDR')
+        st.subheader('Capital Allocation in IDR)
         fig, ax = plt.subplots(figsize=(8, 6))
         bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
         ax.set_xlabel('Assets', fontsize=12)
