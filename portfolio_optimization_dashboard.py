@@ -173,11 +173,18 @@ for ticker in tickers:
         if ticker == "Mutual Fund":
             continue  # Skip fetching data for mutual fund
         data = yf.download(ticker, start=start_date, end=end_date)
+        
+        # Use 'Adj Close' if available, otherwise fallback to 'Close'
         if 'Adj Close' in data.columns:
-            adj_close_df[ticker] = data['Adj Close']
-            st.write(f"Data fetched for {ticker}")
+            price_series = data['Adj Close']
+        elif 'Close' in data.columns:
+            price_series = data['Close']
         else:
-            st.warning(f"Data for {ticker} is missing 'Adj Close' column.")
+            st.warning(f"No price data available for {ticker}.")
+            continue
+        
+        adj_close_df[ticker] = price_series
+        st.write(f"Data fetched for {ticker}")
     except Exception as e:
         st.error(f"Error fetching data for {ticker}: {e}")
 
