@@ -54,8 +54,10 @@ for ticker in tickers:
     try:
         data = yf.download(ticker, start=start_date, end=end_date)
         adj_close_df[ticker] = data['Adj Close']
-    except:
-        st.warning(f"⚠️ Could not fetch data for {ticker}")
+        if data.empty:
+            st.warning(f"⚠️ No data found for {ticker}. It may be an invalid ticker or no historical data exists.")
+    except Exception as e:
+        st.warning(f"⚠️ Error fetching {ticker}: {str(e)}")
 
 # Combine stock and crypto data
 if adj_close_df.empty:
