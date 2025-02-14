@@ -51,13 +51,26 @@ tickers = [t.strip() for t in tickers_input.split(',') if t.strip()]
 adj_close_df = pd.DataFrame()
 
 for ticker in tickers:
-    try:
-        data = yf.download(ticker, start=start_date, end=end_date)
-        adj_close_df[ticker] = data['Adj Close']
-        if data.empty:
-            st.warning(f"⚠️ No data found for {ticker}. It may be an invalid ticker or no historical data exists.")
-    except Exception as e:
-        st.warning(f"⚠️ Error fetching {ticker}: {str(e)}")
+    if ticker:
+        try:
+            st.write(f"Fetching data for: {ticker}")  # Debugging line
+            data = yf.download(ticker, start=start_date, end=end_date)
+
+            if data.empty:
+                st.warning(f"⚠️ No data found for {ticker}. It may be an invalid ticker or Yahoo Finance may be down.")
+            else:
+                st.write(f"✅ Successfully fetched {ticker} data!")  # Debugging line
+                
+            if 'Adj Close' in data.columns:
+                adj_close_df[ticker] = data['Adj Close']
+            elif 'Close' in data.columns:
+                adj_close_df[ticker] = data['Close']
+            else:
+                st.warning(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
+                continue
+        except Exception as e:
+            st.error(f"⚠️ Error fetching {ticker}: {str(e)}")
+            continue
 
 # Combine stock and crypto data
 if adj_close_df.empty:
