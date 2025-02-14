@@ -169,21 +169,14 @@ if include_mutual_fund:
 
 # Fetch data for all tickers
 for ticker in tickers:
-    if ticker == "Mutual Fund":
-        # Skip fetching data for the mutual fund; we'll handle it separately
-        continue
     try:
         data = yf.download(ticker, start=start_date, end=end_date)
         if 'Adj Close' in data.columns:
             adj_close_df[ticker] = data['Adj Close']
-        elif 'Close' in data.columns:
-            adj_close_df[ticker] = data['Close']
         else:
-            st.warning(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
-            continue
+            st.warning(f"Data for {ticker} is missing 'Adj Close' column.")
     except Exception as e:
         st.error(f"Error fetching data for {ticker}: {e}")
-        continue
 
 # Add mutual fund data after fetching all other tickers
 if include_mutual_fund:
@@ -204,8 +197,9 @@ else:
 
     # Set the covariance of the mutual fund to 0 (risk-free)
     if include_mutual_fund:
-        cov_matrix.loc["Mutual Fund", :] = 0
-        cov_matrix.loc[:, "Mutual Fund"] = 0
+        if "Mutual Fund" in cov_matrix.index:
+            cov_matrix.loc["Mutual Fund", :] = 0
+            cov_matrix.loc[:, "Mutual Fund"] = 0
 
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
     for i in range(len(tickers)):
