@@ -186,7 +186,7 @@ if include_mutual_fund:
     # Use the index of adj_close_df to align the mutual fund data
     if not adj_close_df.empty:
         dates = adj_close_df.index
-        mutual_fund_values = np.exp(np.log(1 + mutual_fund_return) * np.arange(len(dates)) / 252
+        mutual_fund_values = np.exp(np.log(1 + mutual_fund_return) * np.arange(len(dates)) / 252)
         adj_close_df["Mutual Fund"] = mutual_fund_values
     else:
         st.error("No data available for the selected tickers. Cannot add mutual fund.")
