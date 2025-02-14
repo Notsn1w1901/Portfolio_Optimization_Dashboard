@@ -136,6 +136,15 @@ Objective: Maximize risk-adjusted returns by optimizing the Sharpe Ratio.
 # Sidebar Inputs for User Interactivity
 st.sidebar.image("Designer.png", use_container_width=True)
 st.sidebar.header("Portfolio Inputs")
+
+# Add a checkbox for mutual funds
+include_mutual_fund = st.sidebar.checkbox("Include Mutual Fund", value=False)
+
+# Add an input field for the expected return of the mutual fund
+mutual_fund_return = 0.0
+if include_mutual_fund:
+    mutual_fund_return = st.sidebar.number_input("Expected Return of Mutual Fund (%)", value=6.0, step=0.1) / 100
+
 tickers_input = st.sidebar.text_input("Enter asset tickers (e.g., BBCA.JK, BTC-USD, TSLA)", "BBCA.JK, BTC-USD")
 risk_free_rate_input = st.sidebar.number_input("Risk-Free Rate (%)", value=6.0, step=0.1) / 100
 investment_amount_idr = st.sidebar.number_input("Investment Amount (IDR)", value=10000000, step=100000)
@@ -153,8 +162,17 @@ adj_close_df = pd.DataFrame()
 
 # Fetch data for all tickers entered by the user
 tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip()]
+
+# Add mutual fund to the list of tickers if selected
+if include_mutual_fund:
+    tickers.append("Mutual Fund")
+
 for ticker in tickers:
-    if ticker:
+    if ticker == "Mutual Fund":
+        # For mutual funds, create a series with 0 volatility and the user-specified return
+        dates = pd.date_range(start=start_date, end=end_date, freq='D')
+        adj_close_df[ticker] = np.exp(np.log(1 + mutual_fund_return) * np.arange(len(dates)) / 252)
+    else:
         try:
             data = yf.download(ticker, start=start_date, end=end_date)
             if 'Adj Close' in data.columns:
@@ -174,6 +192,11 @@ else:
     log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()
     cov_matrix = log_returns.cov() * 252  # Annualized covariance matrix
 
+    # Set the covariance of the mutual fund to 0 (risk-free)
+    if include_mutual_fund:
+        cov_matrix.loc["Mutual Fund", :] = 0
+        cov_matrix.loc[:, "Mutual Fund"] = 0
+
     constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
     for i in range(len(tickers)):
         constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: weights[i] - min_weight})
@@ -191,7 +214,9 @@ else:
     # Capital allocation in IDR
     shares = []
     for i, ticker in enumerate(tickers):
-        if '-USD' in ticker:
+        if ticker == "Mutual Fund":
+            shares.append(capital_allocation_idr[i])  # Mutual fund is not traded in shares
+        elif '-USD' in ticker:
             shares.append(capital_allocation_idr[i] / usd_price_idr / adj_close_df[ticker].iloc[-1])
         else:
             shares.append(np.floor(capital_allocation_idr[i] / adj_close_df[ticker].iloc[-1] / 100) * 100)
@@ -211,53 +236,52 @@ else:
     # Fetch the current price of each asset
     current_prices = {}
     for ticker in tickers:
-        try:
-            # For USD-based assets (e.g., BTC-USD), use the 'Close' price
-            if '-USD' in ticker:
-                data = yf.download(ticker, start=start_date, end=end_date)
-                if 'Close' in data.columns:
-                    current_price = data['Close'].iloc[-1]
-                    current_prices[ticker] = float(current_price)
+        if ticker == "Mutual Fund":
+            current_prices[ticker] = 1.0  # Mutual fund is treated as having a unit price of 1
+        else:
+            try:
+                if '-USD' in ticker:
+                    data = yf.download(ticker, start=start_date, end=end_date)
+                    if 'Close' in data.columns:
+                        current_price = data['Close'].iloc[-1]
+                        current_prices[ticker] = float(current_price)
+                    else:
+                        st.warning(f"Missing 'Close' column for {ticker}.")
+                        current_prices[ticker] = None
                 else:
-                    st.warning(f"Missing 'Close' column for {ticker}.")
-                    current_prices[ticker] = None
-            else:
-                # For regular stock tickers, use the 'Adj Close' price
-                if ticker in adj_close_df:
-                    current_price = adj_close_df[ticker].iloc[-1]  # Latest adjusted close price
-                    current_prices[ticker] = float(current_price)
-                else:
-                    st.warning(f"Price data for {ticker} is not available.")
-                    current_prices[ticker] = None
-        except Exception as e:
-            st.error(f"Error fetching current price for {ticker}: {e}")
-            current_prices[ticker] = None  # Set to None if there's an error fetching the price
+                    if ticker in adj_close_df:
+                        current_price = adj_close_df[ticker].iloc[-1]
+                        current_prices[ticker] = float(current_price)
+                    else:
+                        st.warning(f"Price data for {ticker} is not available.")
+                        current_prices[ticker] = None
+            except Exception as e:
+                st.error(f"Error fetching current price for {ticker}: {e}")
+                current_prices[ticker] = None
     
     # Populate the assets data for the table
-    assets_data = []
     for i, ticker in enumerate(tickers):
         weight = optimal_weights[i]
         capital_allocation = capital_allocation_idr[i]
         current_price = current_prices.get(ticker, None)
     
         if current_price is not None:
-            # Format the allocated capital to IDR
             capital_allocation_str = f"Rp {capital_allocation:,.2f}"  # Display in IDR
     
-            # Determine the currency and calculate shares accordingly
-            if '-USD' in ticker:  # For USD assets (cryptos)
-                shares_value = capital_allocation / usd_price_idr / current_price  # Convert to USD first
-                currency = 'USD'  # Treat as USD for display purposes
-                shares_value_str = f"{shares_value:.8f}"  # Format shares value to 8 decimal places
-            else:  # For stocks
-                shares_value = np.floor(capital_allocation / current_price / 100) * 100  # Round to nearest 100 shares
+            if ticker == "Mutual Fund":
+                shares_value_str = "N/A"  # Mutual funds are not traded in shares
+                currency = "IDR"
+            elif '-USD' in ticker:
+                shares_value = capital_allocation / usd_price_idr / current_price
+                currency = 'USD'
+                shares_value_str = f"{shares_value:.8f}"
+            else:
+                shares_value = np.floor(capital_allocation / current_price / 100) * 100
                 currency = 'IDR'
-                shares_value_str = f"{shares_value:.0f}"  # Default to 0 decimal places for stocks
-            
-            # Append the data to the list with formatted shares_value
+                shares_value_str = f"{shares_value:.0f}"
+    
             assets_data.append([ticker, f"{weight * 100:.2f}%", capital_allocation_str, f"{current_price:,.2f} {currency}", shares_value_str])
         else:
-            # If current price is missing, show N/A
             assets_data.append([ticker, f"{weight * 100:.2f}%", "N/A", "N/A", "N/A"])
     
     # Convert the assets data into a DataFrame for display
