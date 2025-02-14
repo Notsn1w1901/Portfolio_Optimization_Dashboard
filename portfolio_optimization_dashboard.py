@@ -167,24 +167,34 @@ tickers = [ticker.strip() for ticker in tickers_input.split(',') if ticker.strip
 if include_mutual_fund:
     tickers.append("Mutual Fund")
 
+# Fetch data for all tickers
 for ticker in tickers:
     if ticker == "Mutual Fund":
-        # For mutual funds, create a series with 0 volatility and the user-specified return
-        dates = pd.date_range(start=start_date, end=end_date, freq='D')
-        adj_close_df[ticker] = np.exp(np.log(1 + mutual_fund_return) * np.arange(len(dates)) / 252)
-    else:
-        try:
-            data = yf.download(ticker, start=start_date, end=end_date)
-            if 'Adj Close' in data.columns:
-                adj_close_df[ticker] = data['Adj Close']
-            elif 'Close' in data.columns:
-                adj_close_df[ticker] = data['Close']
-            else:
-                st.warning(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
-                continue
-        except Exception as e:
-            st.error(f"Error fetching data for {ticker}: {e}")
+        # Skip fetching data for the mutual fund; we'll handle it separately
+        continue
+    try:
+        data = yf.download(ticker, start=start_date, end=end_date)
+        if 'Adj Close' in data.columns:
+            adj_close_df[ticker] = data['Adj Close']
+        elif 'Close' in data.columns:
+            adj_close_df[ticker] = data['Close']
+        else:
+            st.warning(f"Data for {ticker} is missing 'Adj Close' and 'Close' columns.")
             continue
+    except Exception as e:
+        st.error(f"Error fetching data for {ticker}: {e}")
+        continue
+
+# Add mutual fund data after fetching all other tickers
+if include_mutual_fund:
+    # Use the index of adj_close_df to align the mutual fund data
+    if not adj_close_df.empty:
+        dates = adj_close_df.index
+        mutual_fund_values = np.exp(np.log(1 + mutual_fund_return) * np.arange(len(dates)) / 252
+        adj_close_df["Mutual Fund"] = mutual_fund_values
+    else:
+        st.error("No data available for the selected tickers. Cannot add mutual fund.")
+        st.stop()
 
 if adj_close_df.empty:
     st.error("No data available for the selected tickers.")
