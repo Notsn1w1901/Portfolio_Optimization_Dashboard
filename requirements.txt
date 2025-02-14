@@ -6,4 +6,3 @@ datetime
 scipy
 requests
 seaborn
-investpy
