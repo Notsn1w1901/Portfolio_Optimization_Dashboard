@@ -391,10 +391,10 @@ else:
             ax.set_title('Capital Allocation for Investment (in IDR)', fontsize=14, fontweight='bold')
             ax.tick_params(axis='x', rotation=45)
             
-            # Annotate the bars with capital amounts
-            for bar in bars:
-                height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width() / 2, height, f'Rp {height:,.0f}',
-                        ha='center', va='bottom', fontsize=9, color='black')
+          # Annotate the bars with capital amounts
+        for bar in bars:
+            height = bar.get_height()
+               ax.text(bar.get_x() + bar.get_width() / 2, height, f'Rp {height:,.0f}',
+                       ha='center', va='bottom', fontsize=9, color='black')
             
-            st.pyplot(fig)
+        st.pyplot(fig)
