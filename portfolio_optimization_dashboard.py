@@ -218,11 +218,6 @@ else:
                 cov_matrix.loc[:, "Mutual Fund"] = 0
 
         constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
-        # The inequality constraints were not optimal, this is a better way to set bounds
-        # for i in range(len(tickers)):
-        #     constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: weights[i] - min_weight})
-        #     constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: max_weight - weights[i]})
-
         bounds = [(min_weight, max_weight)] * len(tickers)
 
         initial_weights = np.ones(len(tickers)) / len(tickers)
@@ -294,8 +289,7 @@ else:
         st.dataframe(assets_df)
 
         st.subheader('📊 Portfolio Metrics')
-        # ... (The rest of your Streamlit metric card code remains the same) ...
-
+        
         # First row (2 columns, equal size)
         col1, col2 = st.columns(2)
         with col1:
@@ -391,10 +385,11 @@ else:
             ax.set_title('Capital Allocation for Investment (in IDR)', fontsize=14, fontweight='bold')
             ax.tick_params(axis='x', rotation=45)
             
-          # Annotate the bars with capital amounts
-        for bar in bars:
-            height = bar.get_height()
-               ax.text(bar.get_x() + bar.get_width() / 2, height, f'Rp {height:,.0f}',
-                       ha='center', va='bottom', fontsize=9, color='black')
+            # Annotate the bars with capital amounts
+            for bar in bars:
+                height = bar.get_height()
+                # THIS IS THE CORRECTED INDENTATION
+                ax.text(bar.get_x() + bar.get_width() / 2, height, f'Rp {height:,.0f}',
+                        ha='center', va='bottom', fontsize=9, color='black')
             
-        st.pyplot(fig)
+            st.pyplot(fig)
