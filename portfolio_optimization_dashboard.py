@@ -240,7 +240,12 @@ else:
 
         portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
         portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
-        cumulative_returns_series = (1 + np.dot(log_returns, optimal_weights)).cumprod()
+        
+        # --- CORRECTED CUMULATIVE RETURNS CALCULATION ---
+        portfolio_daily_returns = np.dot(log_returns, optimal_weights)
+        cumulative_returns_series = pd.Series((1 + portfolio_daily_returns).cumprod(), index=log_returns.index)
+        # --- END OF FIX ---
+        
         max_dd = max_drawdown(cumulative_returns_series)
         portfolio_returns = np.dot(log_returns.values, optimal_weights)
         portfolio_var = value_at_risk(portfolio_returns)
