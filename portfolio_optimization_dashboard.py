@@ -203,227 +203,198 @@ if adj_close_df.empty:
     st.error("No data available for the selected tickers.")
 else:
     log_returns = np.log(adj_close_df / adj_close_df.shift(1)).dropna()
-    cov_matrix = log_returns.cov() * 252  # Annualized covariance matrix
 
-    # Set the covariance of the mutual fund to 0 (risk-free)
-    if include_mutual_fund:
-        if "Mutual Fund" in cov_matrix.index:
-            cov_matrix.loc["Mutual Fund", :] = 0
-            cov_matrix.loc[:, "Mutual Fund"] = 0
+    # FIX: Add a check to ensure log_returns is not empty before proceeding
+    if log_returns.empty:
+        st.error("Not enough historical data to perform optimization for the selected timeframe. Please select a longer 'Years of Data' period.")
+    else:
+        # --- All subsequent code is now safely inside this else block ---
+        cov_matrix = log_returns.cov() * 252  # Annualized covariance matrix
 
-    constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
-    for i in range(len(tickers)):
-        constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: weights[i] - min_weight})
-        constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: max_weight - weights[i]})
+        # Set the covariance of the mutual fund to 0 (risk-free)
+        if include_mutual_fund:
+            if "Mutual Fund" in cov_matrix.index:
+                cov_matrix.loc["Mutual Fund", :] = 0
+                cov_matrix.loc[:, "Mutual Fund"] = 0
 
-    bounds = [(min_weight, max_weight)] * len(tickers)
+        constraints = [{'type': 'eq', 'fun': lambda weights: np.sum(weights) - 1}]
+        # The inequality constraints were not optimal, this is a better way to set bounds
+        # for i in range(len(tickers)):
+        #     constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: weights[i] - min_weight})
+        #     constraints.append({'type': 'ineq', 'fun': lambda weights, i=i: max_weight - weights[i]})
 
-    initial_weights = np.ones(len(tickers)) / len(tickers)
-    optimized_results = minimize(neg_sharpe_ratio, initial_weights, args=(log_returns, cov_matrix, risk_free_rate_input),
-                                 method='SLSQP', constraints=constraints, bounds=bounds)
+        bounds = [(min_weight, max_weight)] * len(tickers)
 
-    optimal_weights = optimized_results.x
-    capital_allocation_idr = optimal_weights * investment_amount_idr
+        initial_weights = np.ones(len(tickers)) / len(tickers)
+        optimized_results = minimize(neg_sharpe_ratio, initial_weights, args=(log_returns, cov_matrix, risk_free_rate_input),
+                                     method='SLSQP', constraints=constraints, bounds=bounds)
 
-    # Capital allocation in IDR
-    shares = []
-    for i, ticker in enumerate(tickers):
-        if ticker == "Mutual Fund":
-            shares.append(capital_allocation_idr[i])  # Mutual fund is not traded in shares
-        elif '-USD' in ticker:
-            shares.append(capital_allocation_idr[i] / usd_price_idr / adj_close_df[ticker].iloc[-1])
-        else:
-            shares.append(np.floor(capital_allocation_idr[i] / adj_close_df[ticker].iloc[-1] / 100) * 100)
+        optimal_weights = optimized_results.x
+        capital_allocation_idr = optimal_weights * investment_amount_idr
 
-    portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
-    portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
-    cumulative_returns = pd.Series((1 + np.dot(log_returns.values, optimal_weights)).cumprod())
-    max_dd = max_drawdown(cumulative_returns)
-    portfolio_returns = np.dot(log_returns.values, optimal_weights)
-    portfolio_var = value_at_risk(portfolio_returns)
-    portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
-    portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)    
-
-    # Create a DataFrame for the asset details (number of assets, weightings, allocated capital, number of shares)
-    assets_data = []
-    
-    # Fetch the current price of each asset
-    current_prices = {}
-    for ticker in tickers:
-        if ticker == "Mutual Fund":
-            current_prices[ticker] = 1.0  # Mutual fund is treated as having a unit price of 1
-        else:
-            try:
-                if '-USD' in ticker:
-                    data = yf.download(ticker, start=start_date, end=end_date)
-                    if 'Close' in data.columns:
-                        current_price = data['Close'].iloc[-1]
-                        current_prices[ticker] = float(current_price)
-                    else:
-                        st.warning(f"Missing 'Close' column for {ticker}.")
-                        current_prices[ticker] = None
-                else:
-                    if ticker in adj_close_df:
-                        current_price = adj_close_df[ticker].iloc[-1]
-                        current_prices[ticker] = float(current_price)
-                    else:
-                        st.warning(f"Price data for {ticker} is not available.")
-                        current_prices[ticker] = None
-            except Exception as e:
-                st.error(f"Error fetching current price for {ticker}: {e}")
-                current_prices[ticker] = None
-    
-    # Populate the assets data for the table
-    for i, ticker in enumerate(tickers):
-        weight = optimal_weights[i]
-        capital_allocation = capital_allocation_idr[i]
-        current_price = current_prices.get(ticker, None)
-    
-        if current_price is not None:
-            capital_allocation_str = f"Rp {capital_allocation:,.2f}"  # Display in IDR
-    
+        # Capital allocation in IDR
+        shares = []
+        for i, ticker in enumerate(tickers):
             if ticker == "Mutual Fund":
-                shares_value_str = "N/A"  # Mutual funds are not traded in shares
-                currency = "IDR"
+                shares.append(capital_allocation_idr[i])  # Mutual fund is not traded in shares
             elif '-USD' in ticker:
-                shares_value = capital_allocation / usd_price_idr / current_price
-                currency = 'USD'
-                shares_value_str = f"{shares_value:.8f}"
+                shares.append(capital_allocation_idr[i] / usd_price_idr / adj_close_df[ticker].iloc[-1])
             else:
-                shares_value = np.floor(capital_allocation / current_price / 100) * 100
-                currency = 'IDR'
-                shares_value_str = f"{shares_value:.0f}"
-    
-            assets_data.append([ticker, f"{weight * 100:.2f}%", capital_allocation_str, f"{current_price:,.2f} {currency}", shares_value_str])
-        else:
-            assets_data.append([ticker, f"{weight * 100:.2f}%", "N/A", "N/A", "N/A"])
-    
-    # Convert the assets data into a DataFrame for display
-    assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital", "Current Price", "Shares"])
-    
-    # Display the table
-    st.subheader('📝 Asset Details')
-    st.dataframe(assets_df)
+                # Correcting the share calculation for Indonesian stocks (lots of 100)
+                shares.append(np.floor(capital_allocation_idr[i] / adj_close_df[ticker].iloc[-1] / 100) * 100)
 
-    st.subheader('📊 Portfolio Metrics')
+        portfolio_expected_return = expected_return(optimal_weights, log_returns) * 100
+        portfolio_risk = standard_deviation(optimal_weights, cov_matrix) * 100
+        cumulative_returns_series = (1 + np.dot(log_returns, optimal_weights)).cumprod()
+        max_dd = max_drawdown(cumulative_returns_series)
+        portfolio_returns = np.dot(log_returns.values, optimal_weights)
+        portfolio_var = value_at_risk(portfolio_returns)
+        portfolio_es = expected_shortfall(portfolio_returns, portfolio_var)
+        portfolio_sortino = sortino_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input)
 
-    # First row (2 columns, equal size)
-    col1, col2 = st.columns(2)
-    
-    # Expected Return
-    with col1:
-        st.markdown(f"""
-        <div class="metric-card metric-return">
-            <div class="icon">📈</div>
-            <h3>Expected Return</h3>
-            <p class="value">{portfolio_expected_return:.2f}%</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Risk (Standard Deviation)
-    with col2:
-        st.markdown(f"""
-        <div class="metric-card metric-risk">
-            <div class="icon">⚖️</div>
-            <h3>Risk (Std Dev)</h3>
-            <p class="value">{portfolio_risk:.2f}%</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Second row (2 columns, equal size)
-    col3, col4 = st.columns(2)
-    
-    # Max Drawdown
-    with col3:
-        st.markdown(f"""
-        <div class="metric-card metric-drawdown">
-            <div class="icon">⛔</div>
-            <h3>Max Drawdown</h3>
-            <p class="value">{max_dd * 100:.2f}%</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Sharpe Ratio
-    with col4:
-        st.markdown(f"""
-        <div class="metric-card metric-sharpe">
-            <div class="icon">📊</div>
-            <h3>Sharpe Ratio</h3>
-            <p class="value">{sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Third row (3 columns, equal size)
-    col5, col6, col7 = st.columns(3)
-    
-    # Sortino Ratio
-    with col5:
-        st.markdown(f"""
-        <div class="metric-card metric-other">
-            <div class="icon">⚡</div>
-            <h3>Sortino Ratio</h3>
-            <p class="value">{portfolio_sortino:.2f}</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Value at Risk (VaR)
-    with col6:
-        st.markdown(f"""
-        <div class="metric-card metric-other">
-            <div class="icon">💥</div>
-            <h3>Value at Risk (VaR)</h3>
-            <p class="value">{portfolio_var * 100:.2f}%</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # Expected Shortfall (ES)
-    with col7:
-        st.markdown(f"""
-        <div class="metric-card metric-other">
-            <div class="icon">💸</div>
-            <h3>Expected Shortfall (ES)</h3>
-            <p class="value">{portfolio_es * 100:.2f}%</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    # This part should be outside of any function or nested block and have the correct indentation.
-    st.subheader('Portfolio Performance and Allocation')
+        # Create a DataFrame for the asset details
+        assets_data = []
+        current_prices = {}
+        for ticker in tickers:
+            if ticker == "Mutual Fund":
+                current_prices[ticker] = 1.0  # Unit price of 1 for mutual fund
+            else:
+                # Use the last available price from the fetched data
+                current_prices[ticker] = adj_close_df[ticker].iloc[-1] if ticker in adj_close_df else None
 
-    # Create 3 columns layout for horizontal stacking
-    col1, col2, col3 = st.columns(3)
+        # Populate the assets data for the table
+        for i, ticker in enumerate(tickers):
+            weight = optimal_weights[i]
+            capital_allocation = capital_allocation_idr[i]
+            current_price = current_prices.get(ticker, None)
 
-    with col1:
-        # Cumulative Returns Graph
-        st.subheader('Portfolio Cumulative Returns')
-        fig, ax = plt.subplots(figsize=(8, 6))
-        ax.plot(cumulative_returns, label='Optimized Portfolio', color="#4CAF50", linewidth=2)
-        ax.set_title('Portfolio Performance (Cumulative Returns)', fontsize=14, fontweight='bold')
-        ax.set_xlabel('Time (Days)', fontsize=12)
-        ax.set_ylabel('Cumulative Returns', fontsize=12)
-        ax.legend()
-        st.pyplot(fig)
+            if current_price is not None:
+                capital_allocation_str = f"Rp {capital_allocation:,.2f}"
 
-    with col2:
-        # Portfolio Weights Distribution Graph (Pie chart)
-        st.subheader('Portfolio Weights Distribution')
-        fig, ax = plt.subplots(figsize=(6, 6))
-        ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
-        ax.set_title('Optimal Portfolio Weights', fontsize=14, fontweight='bold')
-        st.pyplot(fig)
+                if ticker == "Mutual Fund":
+                    shares_value_str = "N/A"
+                    currency = "IDR"
+                elif '-USD' in ticker:
+                    shares_value = capital_allocation / usd_price_idr / current_price
+                    currency = 'USD'
+                    shares_value_str = f"{shares_value:.8f}"
+                else:
+                    shares_value = np.floor(capital_allocation / current_price / 100) * 100 if current_price > 0 else 0
+                    currency = 'IDR'
+                    shares_value_str = f"{int(shares_value)}"
 
-    with col3:
-        # Capital Allocation in IDR Graph (Bar chart)
-        st.subheader('Capital Allocation in IDR')
-        fig, ax = plt.subplots(figsize=(8, 6))
-        bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
-        ax.set_xlabel('Assets', fontsize=12)
-        ax.set_ylabel('Allocated Capital (Rp)', fontsize=14)
-        ax.set_title('Capital Allocation for Investment (in IDR)', fontsize=14, fontweight='bold')
+                assets_data.append([ticker, f"{weight * 100:.2f}%", capital_allocation_str, f"{current_price:,.2f} {currency}", shares_value_str])
+            else:
+                assets_data.append([ticker, f"{weight * 100:.2f}%", "N/A", "N/A", "N/A"])
 
-        # Annotate the bars with capital amounts
-        for bar in bars:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width() / 2, height + 50000, f'Rp {height:,.2f}', 
-                     ha='center', va='bottom', fontsize=10, color='black')
+        assets_df = pd.DataFrame(assets_data, columns=["Asset", "Weighting", "Allocated Capital", "Current Price", "Shares"])
 
-        st.pyplot(fig)
+        # Display the table
+        st.subheader('📝 Asset Details')
+        st.dataframe(assets_df)
+
+        st.subheader('📊 Portfolio Metrics')
+        # ... (The rest of your Streamlit metric card code remains the same) ...
+
+        # First row (2 columns, equal size)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card metric-return">
+                <div class="icon">📈</div>
+                <h3>Expected Return</h3>
+                <p class="value">{portfolio_expected_return:.2f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with col2:
+            st.markdown(f"""
+            <div class="metric-card metric-risk">
+                <div class="icon">⚖️</div>
+                <h3>Risk (Std Dev)</h3>
+                <p class="value">{portfolio_risk:.2f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Second row (2 columns, equal size)
+        col3, col4 = st.columns(2)
+        with col3:
+            st.markdown(f"""
+            <div class="metric-card metric-drawdown">
+                <div class="icon">⛔</div>
+                <h3>Max Drawdown</h3>
+                <p class="value">{max_dd * 100:.2f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with col4:
+            st.markdown(f"""
+            <div class="metric-card metric-sharpe">
+                <div class="icon">📊</div>
+                <h3>Sharpe Ratio</h3>
+                <p class="value">{sharpe_ratio(optimal_weights, log_returns, cov_matrix, risk_free_rate_input):.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        # Third row (3 columns, equal size)
+        col5, col6, col7 = st.columns(3)
+        with col5:
+            st.markdown(f"""
+            <div class="metric-card metric-other">
+                <div class="icon">⚡</div>
+                <h3>Sortino Ratio</h3>
+                <p class="value">{portfolio_sortino:.2f}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with col6:
+            st.markdown(f"""
+            <div class="metric-card metric-other">
+                <div class="icon">💥</div>
+                <h3>Value at Risk (VaR)</h3>
+                <p class="value">{portfolio_var * 100:.2f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+        with col7:
+            st.markdown(f"""
+            <div class="metric-card metric-other">
+                <div class="icon">💸</div>
+                <h3>Expected Shortfall (ES)</h3>
+                <p class="value">{portfolio_es * 100:.2f}%</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.subheader('Portfolio Performance and Allocation')
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.subheader('Portfolio Cumulative Returns')
+            fig, ax = plt.subplots(figsize=(8, 6))
+            ax.plot(cumulative_returns_series.index, cumulative_returns_series.values, label='Optimized Portfolio', color="#4CAF50", linewidth=2)
+            ax.set_title('Portfolio Performance (Cumulative Returns)', fontsize=14, fontweight='bold')
+            ax.set_xlabel('Time', fontsize=12)
+            ax.set_ylabel('Cumulative Returns', fontsize=12)
+            ax.legend()
+            plt.xticks(rotation=45)
+            st.pyplot(fig)
+
+        with col2:
+            st.subheader('Portfolio Weights Distribution')
+            fig, ax = plt.subplots(figsize=(6, 6))
+            ax.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, colors=plt.cm.Paired.colors)
+            ax.set_title('Optimal Portfolio Weights', fontsize=14, fontweight='bold')
+            st.pyplot(fig)
+
+        with col3:
+            st.subheader('Capital Allocation in IDR')
+            fig, ax = plt.subplots(figsize=(8, 6))
+            bars = ax.bar(tickers, capital_allocation_idr, color=plt.cm.Paired.colors)
+            ax.set_xlabel('Assets', fontsize=12)
+            ax.set_ylabel('Allocated Capital (Rp)', fontsize=14)
+            ax.set_title('Capital Allocation for Investment (in IDR)', fontsize=14, fontweight='bold')
+            ax.tick_params(axis='x', rotation=45)
+            
+            # Annotate the bars with capital amounts
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width() / 2, height, f'Rp {height:,.0f}',
+                        ha='center', va='bottom', fontsize=9, color='black')
+            
+            st.pyplot(fig)
