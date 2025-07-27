@@ -1,6 +1,8 @@
 import yfinance as yf
 import pandas as pd
 import numpy as np
+import matplotlib
+matplotlib.use('Agg') # Use a non-interactive backend for web apps
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from scipy.optimize import minimize
@@ -15,19 +17,17 @@ def get_current_price(ticker):
     """
     try:
         stock = yf.Ticker(ticker)
-        # Use history() for the most reliable recent price
         todays_data = stock.history(period='1d')
         if not todays_data.empty:
             return todays_data['Close'].iloc[-1]
         
-        # Fallback to info dictionary if history is empty
         info = stock.info
         if 'regularMarketPrice' in info and info['regularMarketPrice'] is not None:
             return info['regularMarketPrice']
         elif 'previousClose' in info and info['previousClose'] is not None:
             return info['previousClose']
         else:
-            return None # No price found
+            return None
             
     except Exception as e:
         return None
@@ -88,7 +88,6 @@ st.set_page_config(page_title="Portfolio Optimization", layout="wide", initial_s
 
 st.markdown("""
 <style>
-    /* Metric Card Styles */
     .metric-card {
         background: linear-gradient(145deg, #2e335b, #4a5080);
         border-radius: 15px;
@@ -271,12 +270,11 @@ else:
         g_col1, g_col2 = st.columns(2)
         with g_col1:
             st.write('**Portfolio Weights Distribution**')
-            # Doughnut chart for better aesthetics
             fig_pie, ax_pie = plt.subplots(figsize=(6, 5))
             ax_pie.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, wedgeprops=dict(width=0.4), pctdistance=0.8)
             ax_pie.set_title('Optimal Portfolio Weights', fontsize=14, fontweight='bold')
             st.pyplot(fig_pie)
-            plt.close(fig_pie) # --- FIX: Close the figure ---
+            plt.close(fig_pie)
 
             st.write('**Capital Allocation (IDR)**')
             fig_bar, ax_bar = plt.subplots(figsize=(6, 5))
@@ -285,7 +283,7 @@ else:
             ax_bar.set_title('Capital Allocation', fontsize=14, fontweight='bold')
             plt.xticks(rotation=45, ha="right")
             st.pyplot(fig_bar)
-            plt.close(fig_bar) # --- FIX: Close the figure ---
+            plt.close(fig_bar)
 
         with g_col2:
             st.write('**Portfolio Cumulative Returns**')
@@ -297,4 +295,4 @@ else:
             plt.xticks(rotation=45, ha="right")
             ax_line.grid(True, linestyle='--', alpha=0.6)
             st.pyplot(fig_line)
-            plt.close(fig_line) # --- FIX: Close the figure ---
+            plt.close(fig_line)
