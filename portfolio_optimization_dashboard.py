@@ -149,12 +149,11 @@ with st.spinner('Fetching historical data...'):
             data = yf.download(ticker, start=start_date, end=end_date, progress=False)
             if not data.empty and 'Adj Close' in data.columns:
                 adj_close_df[ticker] = data['Adj Close']
+            elif not data.empty and 'Close' in data.columns:
+                 st.warning(f"No 'Adj Close' data for {ticker}. Using 'Close' price.")
+                 adj_close_df[ticker] = data['Close']
             else:
-                st.warning(f"No 'Adj Close' data for {ticker}. Trying 'Close' price.")
-                if not data.empty and 'Close' in data.columns:
-                     adj_close_df[ticker] = data['Close']
-                else:
-                    st.error(f"Could not fetch any price data for {ticker}.")
+                st.error(f"Could not fetch any price data for {ticker}.")
         except Exception as e:
             st.error(f"Error fetching data for {ticker}: {e}")
 
@@ -272,18 +271,21 @@ else:
         g_col1, g_col2 = st.columns(2)
         with g_col1:
             st.write('**Portfolio Weights Distribution**')
+            # Doughnut chart for better aesthetics
             fig_pie, ax_pie = plt.subplots(figsize=(6, 5))
-            ax_pie.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, wedgeprops=dict(width=0.4))
+            ax_pie.pie(optimal_weights, labels=tickers, autopct='%1.1f%%', startangle=90, wedgeprops=dict(width=0.4), pctdistance=0.8)
             ax_pie.set_title('Optimal Portfolio Weights', fontsize=14, fontweight='bold')
             st.pyplot(fig_pie)
-            
+            plt.close(fig_pie) # --- FIX: Close the figure ---
+
             st.write('**Capital Allocation (IDR)**')
             fig_bar, ax_bar = plt.subplots(figsize=(6, 5))
             ax_bar.bar(tickers, capital_allocation_idr)
             ax_bar.set_ylabel('Allocated Capital (IDR)')
             ax_bar.set_title('Capital Allocation', fontsize=14, fontweight='bold')
-            plt.xticks(rotation=45)
+            plt.xticks(rotation=45, ha="right")
             st.pyplot(fig_bar)
+            plt.close(fig_bar) # --- FIX: Close the figure ---
 
         with g_col2:
             st.write('**Portfolio Cumulative Returns**')
@@ -292,5 +294,7 @@ else:
             ax_line.set_title('Portfolio Performance Over Time', fontsize=14, fontweight='bold')
             ax_line.set_xlabel('Date')
             ax_line.set_ylabel('Cumulative Returns')
-            plt.xticks(rotation=45)
+            plt.xticks(rotation=45, ha="right")
+            ax_line.grid(True, linestyle='--', alpha=0.6)
             st.pyplot(fig_line)
+            plt.close(fig_line) # --- FIX: Close the figure ---
